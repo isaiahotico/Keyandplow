@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads Rewards Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Ad SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
+    
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="p-6 bg-slate-800 shadow-xl border-b border-blue-500/30">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-400 italic">ADS<span class="text-white">FLOW</span></h1>
+            <div class="text-right">
+                <p id="tg-username" class="text-sm font-medium text-blue-300">Loading User...</p>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400">Telegram Account</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-6 flex flex-col gap-6">
+        
+        <!-- Stats Card -->
+        <div class="glass-card p-6 rounded-3xl text-center">
+            <h2 class="text-slate-400 uppercase text-xs tracking-tighter mb-2">Total Ads Played Today</h2>
+            <div id="ads-count" class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                0
+            </div>
+            <p class="text-[10px] mt-2 text-slate-500 italic">Resets automatically at midnight</p>
+        </div>
+
+        <!-- Timer/Cooldown Card -->
+        <div class="glass-card p-6 rounded-3xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold">Auto-Ad System</h3>
+                    <p id="cooldown-text" class="text-xs text-slate-400">Next ad in: <span id="timer" class="text-emerald-400 font-mono">03:00</span></p>
+                </div>
+                <div class="relative h-12 w-12">
+                    <svg class="h-full w-full" viewBox="0 0 36 36">
+                        <path class="stroke-current text-slate-700" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path id="progress-bar" class="stroke-current text-blue-500" stroke-width="3" stroke-dasharray="100, 100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Trigger -->
+        <button onclick="triggerManualAd()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 p-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95">
+            WATCH INTERSTITIAL AD NOW
+        </button>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 bg-slate-800 border-t border-slate-700">
+        <div class="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest">
+            <div id="footer-date">--/--/----</div>
+            <div id="footer-time">00:00:00</div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
