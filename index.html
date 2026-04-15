@@ -3,97 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ads Rewards Pro</title>
+    <title>Ads Manager Pro</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
-    
     <style>
-        .glass-card {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .hidden { display: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-white min-h-screen flex flex-col font-sans">
 
-    <!-- LOGIN SECTION -->
-    <div id="login-screen" class="flex-grow flex flex-items-center justify-center p-6">
-        <div class="glass-card w-full max-w-md p-8 rounded-3xl shadow-2xl mt-20">
-            <h1 class="text-3xl font-black text-blue-500 mb-2 uppercase italic">AdsFlow</h1>
-            <p class="text-slate-400 text-sm mb-6">Enter your username to access the dashboard</p>
-            
+    <!-- Header -->
+    <header class="p-6 text-center border-b border-slate-800">
+        <h1 class="text-3xl font-bold text-blue-400">Ads Auto-Flow</h1>
+        <p class="text-slate-400 text-sm">Automated Interstitial System</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
+        <div class="glass-morphism rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div class="text-center mb-8">
+                <p class="text-slate-300 uppercase tracking-widest text-xs font-semibold">Stats Today</p>
+                <div id="ads-count" class="text-6xl font-black text-white mt-2">0</div>
+                <p class="text-slate-400 mt-1">Ads Successfully Played</p>
+            </div>
+
             <div class="space-y-4">
-                <input type="text" id="username-input" placeholder="Enter Username..." 
-                    class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl text-white focus:outline-none focus:border-blue-500 transition-all">
-                <button onclick="handleLogin()" 
-                    class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-600/20">
-                    Login to Main Menu
-                </button>
+                <div class="bg-slate-800/50 p-4 rounded-xl flex justify-between items-center">
+                    <span class="text-sm">Cooldown Status</span>
+                    <span id="status-badge" class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold animate-pulse">READY</span>
+                </div>
+                
+                <div class="bg-slate-800/50 p-4 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm">Next Auto-Ad in:</span>
+                        <span id="timer" class="text-blue-400 font-mono">03:00</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="bg-blue-500 h-full w-0 transition-all duration-1000"></div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- MAIN APP SECTION (Hidden by default) -->
-    <div id="main-menu" class="hidden flex flex-col min-h-screen">
-        <!-- Header -->
-        <header class="p-4 bg-slate-900/80 border-b border-blue-500/20 backdrop-blur-md sticky top-0 z-50">
-            <div class="flex justify-between items-center max-w-lg mx-auto">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">U</div>
-
-                    <span id="display-username" class="font-bold text-blue-400 text-sm">👤 User: ---</span>
-                </div>
-                <button onclick="handleLogout()" class="text-[10px] text-slate-500 underline uppercase">Logout</button>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="flex-grow p-6 flex flex-col gap-6 max-w-lg mx-auto w-full">
-            
-            <!-- Daily Ads Counter -->
-            <div class="glass-card p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
-                <h2 class="text-slate-400 uppercase text-[10px] tracking-widest mb-1">Total Ads Played Today</h2>
-                <div id="ads-count" class="text-7xl font-black text-blue-500">0</div>
-                <p class="text-[10px] mt-2 text-slate-500 italic">Resets automatically at 00:00</p>
-            </div>
-
-            <!-- Timer Card -->
-            <div class="glass-card p-5 rounded-2xl border-l-4 border-emerald-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-xs font-bold text-slate-300 uppercase">Auto-Ad System</h3>
-                        <p class="text-lg font-mono text-emerald-400">Next In: <span id="timer">03:00</span></p>
-                    </div>
-                    <div class="animate-pulse text-emerald-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="triggerManualAd()" class="w-full bg-gradient-to-r from-blue-700 to-blue-600 p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-                Watch Interstitial Ad
-            </button>
-
-        </main>
-
-        <!-- Footer Time & Date -->
-        <footer class="p-4 bg-slate-900 border-t border-slate-800 mt-auto">
-            <div class="flex justify-between items-center max-w-lg mx-auto text-[10px] text-slate-500 font-mono uppercase">
-                <div id="footer-date">--/--/----</div>
-                <div class="h-1 w-1 bg-slate-700 rounded-full"></div>
-                <div id="footer-time">00:00:00</div>
-            </div>
-        </footer>
-    </div>
+    <!-- Footer -->
+    <footer class="p-6 bg-slate-950/50 border-t border-slate-800 text-center">
+        <div id="footer-time" class="text-xl font-mono text-blue-400">00:00:00</div>
+        <div id="footer-date" class="text-xs text-slate-500 uppercase tracking-tighter mt-1">Monday, 01 January 2024</div>
+    </footer>
 
     <script src="app.js"></script>
 </body>
