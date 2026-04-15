@@ -15,7 +15,7 @@ const db = firebase.database();
 
 // State Variables
 let adsPlayedToday = 0;
-let cooldownTime = 180; // 3 minutes in seconds
+let cooldownTime = 1; // 3 minutes in seconds
 let currentCooldown = 0;
 const userId = localStorage.getItem('ad_user_id') || 'user_' + Math.random().toString(36).substr(2, 9);
 localStorage.setItem('ad_user_id', userId);
