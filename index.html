@@ -5,74 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ads Rewards Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
+    <!-- SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     
     <style>
         .glass-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .neon-text {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col font-sans">
+<body class="bg-slate-950 text-white min-h-screen flex flex-col overflow-hidden font-sans">
 
-    <!-- Header -->
-    <header class="p-6 bg-slate-800 shadow-xl border-b border-blue-500/30">
-        <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-blue-400 italic">ADS<span class="text-white">FLOW</span></h1>
-            <div class="text-right">
-                <p id="tg-username" class="text-sm font-medium text-blue-300">Loading User...</p>
-                <p class="text-[10px] uppercase tracking-widest text-slate-400">Telegram Account</p>
+    <!-- TOP USER BAR (REAL-TIME TELEGRAM) -->
+    <header class="p-4 bg-slate-900/50 border-b border-blue-500/20 backdrop-blur-md sticky top-0 z-50">
+        <div class="flex justify-between items-center max-w-lg mx-auto">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">TG</div>
+                <span id="userBar" class="font-bold text-blue-400 text-sm tracking-tight">👤 User: Loading...</span>
+            </div>
+            <div class="bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/30">
+                <span class="text-[10px] text-blue-300 font-mono uppercase">Live</span>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow p-6 flex flex-col gap-6">
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow p-6 flex flex-col gap-5 max-w-lg mx-auto w-full overflow-y-auto">
         
-        <!-- Stats Card -->
-        <div class="glass-card p-6 rounded-3xl text-center">
-            <h2 class="text-slate-400 uppercase text-xs tracking-tighter mb-2">Total Ads Played Today</h2>
-            <div id="ads-count" class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-                0
-            </div>
-            <p class="text-[10px] mt-2 text-slate-500 italic">Resets automatically at midnight</p>
+        <!-- DAILY ADS COUNTER -->
+        <div class="glass-card p-6 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
+            <h2 class="text-slate-400 uppercase text-[10px] tracking-widest mb-1">Total Daily Ads Played</h2>
+            <div id="ads-count" class="text-7xl font-black neon-text text-blue-500">0</div>
+            <p class="text-[10px] mt-2 text-slate-500 italic">Automatic reset at 00:00</p>
         </div>
 
-        <!-- Timer/Cooldown Card -->
-        <div class="glass-card p-6 rounded-3xl">
+        <!-- COOLDOWN TIMER -->        <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold">Auto-Ad System</h3>
-                    <p id="cooldown-text" class="text-xs text-slate-400">Next ad in: <span id="timer" class="text-emerald-400 font-mono">03:00</span></p>
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-tighter">Auto-Ad Status</h3>
+                    <p id="cooldown-text" class="text-lg font-mono text-emerald-400">Next: <span id="timer">03:00</span></p>
                 </div>
-                <div class="relative h-12 w-12">
-                    <svg class="h-full w-full" viewBox="0 0 36 36">
-                        <path class="stroke-current text-slate-700" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="progress-bar" class="stroke-current text-blue-500" stroke-width="3" stroke-dasharray="100, 100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <div class="animate-pulse bg-emerald-500/20 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
         </div>
 
-        <!-- Manual Trigger -->
-        <button onclick="triggerManualAd()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 p-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95">
-            WATCH INTERSTITIAL AD NOW
+        <button onclick="triggerManualAd()" class="w-full bg-blue-600 hover:bg-blue-500 p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all active:scale-95">
+            Watch Ad Now
         </button>
 
     </main>
 
-    <!-- Footer -->
-    <footer class="p-4 bg-slate-800 border-t border-slate-700">
-        <div class="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest">
+    <!-- FOOTER TIME & DATE -->
+    <footer class="p-4 bg-slate-900 border-t border-slate-800">
+        <div class="flex justify-between items-center max-w-lg mx-auto text-[10px] text-slate-500 font-mono">
             <div id="footer-date">--/--/----</div>
+            <div class="h-1 w-1 bg-slate-700 rounded-full"></div>
             <div id="footer-time">00:00:00</div>
         </div>
     </footer>
