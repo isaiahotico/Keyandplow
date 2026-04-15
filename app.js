@@ -13,39 +13,72 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ================= TELEGRAM (IMMEDIATE DISPLAY) =================
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand(); // Expand the app for full view
-
-const tgUser = tg?.initDataUnsafe?.user;
-// Ensure @ symbol for username, else first name, else ID
-const username = tgUser 
-    ? (tgUser.username ? @${tgUser.username} : tgUser.first_name) 
-    : "Anonymous_User";
-
-// Display immediately
-document.getElementById("userBar").innerText = "👤 User: " + username;
-
-// Unique ID for Database
-const userId = tgUser?.id || "web_user_" + Math.floor(Math.random() * 1000);
-
-// --- APP STATE ---
+// --- STATE MANAGEMENT ---
+let currentUser = localStorage.getItem('app_username') || null;
 let adsPlayedToday = 0;
 let cooldownTime = 180; // 3 Minutes
 let currentCooldown = cooldownTime;
+let timerInterval;
 
-// --- DAILY COUNTER & SYNC ---
+// --- LOGIN/LOGOUT LOGIC ---
+
+function handleLogin() {
+    const input = document.getElementById('username-input').value.trim();
+    if (input.length < 3) {
+        alert("Please enter a valid username (min 3 characters)");
+        return;
+    }
+    currentUser = input;
+    localStorage.setItem('app_username', currentUser);
+    initApp();
+}
+
+function handleLogout() {
+    localStorage.removeItem('app_username');
+    location.reload();
+}
+
+function initApp() {
+    if (!currentUser) return;
+
+    // Switch Screens
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('main-menu').classList.remove('hidden');
+    document.getElementById('display-username').innerText = "👤 User: " + currentUser;
+
+    // Start Processes
+    syncAdsData();
+    startCooldownTimer();
+    updateClock();
+    
+    // Ad Requirement: Show limitless on open
+    showInterstitial();
+
+    // Ad Requirement: In-App Settings Config
+    show_10555663({
+        type: 'inApp',
+        inAppSettings: {
+            frequency: 2,
+            capping: 0.1,
+            interval: 30,
+            timeout: 5,
+            everyPage: false
+        }
+    });
+}
+
+// --- CORE FUNCTIONALITY ---
+
+// Firebase Daily Sync & Reset
 function syncAdsData() {
     const today = new Date().toISOString().split('T')[0];
-    const userRef = database.ref('users/' + userId);
+    const userRef = database.ref('users/' + currentUser);
 
     userRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.lastDate === today) {
             adsPlayedToday = data.count || 0;
         } else {
-            // New day or new user, reset
             adsPlayedToday = 0;
             userRef.update({ lastDate: today, count: 0 });
         }
@@ -53,50 +86,31 @@ function syncAdsData() {
     });
 }
 
-function incrementAdCounter() {
+function incrementAd() {
     adsPlayedToday++;
     const today = new Date().toISOString().split('T')[0];
-    database.ref('users/' + userId).update({
+    database.ref('users/' + currentUser).update({
         count: adsPlayedToday,
         lastDate: today
     });
 }
 
-// --- AD LOGIC ---
-
-// 1. In-App Auto Settings (As requested)
-show_10555663({
-  type: 'inApp',
-  inAppSettings: {
-    frequency: 2,
-    capping: 0.1,
-    interval: 30,
-    timeout: 5,
-    everyPage: false
-  }
-});
-
-// 2. Interstitial Function
+// Ad Trigger Functions
 function showInterstitial() {
     show_10555663().then(() => {
-        incrementAdCounter();
-    }).catch(e => console.log("Ad skipped or error"));
-}
-
-// 3. Popup Ad for cooldown
-function showCooldownAd() {
-    show_10555663('pop').then(() => {
-        incrementAdCounter();
-    }).catch(e => console.log("Popup error"));
+        incrementAd();
+    }).catch(e => console.log("Ad skipped"));
 }
 
 function triggerManualAd() {
     showInterstitial();
 }
 
-// --- COOLDOWN TIMER (3 MINUTES) ---
-function startTimer() {
-    setInterval(() => {
+// 3 Minute Cooldown Logic
+function startCooldownTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    timerInterval = setInterval(() => {
         currentCooldown--;
         
         const mins = Math.floor(currentCooldown / 60);
@@ -105,13 +119,16 @@ function startTimer() {
             ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')};
 
         if (currentCooldown <= 0) {
-            currentCooldown = cooldownTime; // Reset to 3 mins
-            showCooldownAd();
+            currentCooldown = cooldownTime;
+            // Trigger auto popup ad
+            show_10555663('pop').then(() => {
+                incrementAd();
+            });
         }
     }, 1000);
 }
 
-// --- FOOTER TIME & DATE ---
+// Footer Clock
 function updateClock() {
     const now = new Date();
     document.getElementById('footer-date').innerText = now.toLocaleDateString('en-GB');
@@ -119,12 +136,9 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-// --- INITIALIZE ON LOAD ---
+// --- INITIAL LOAD CHECK ---
 window.onload = () => {
-    updateClock();
-    syncAdsData();
-    startTimer();
-    
-    // Show interstitial immediately upon opening (Limitless requirement)
-    showInterstitial();
+    if (currentUser) {
+        initApp();
+    }
 };
