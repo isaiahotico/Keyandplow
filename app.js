@@ -13,124 +13,118 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// --- STATE MANAGEMENT ---
+// ================= TELEGRAM (IMMEDIATE DISPLAY) =================
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand(); // Expand the app for full view
+
+const tgUser = tg?.initDataUnsafe?.user;
+// Ensure @ symbol for username, else first name, else ID
+const username = tgUser 
+    ? (tgUser.username ? @${tgUser.username} : tgUser.first_name) 
+    : "Anonymous_User";
+
+// Display immediately
+document.getElementById("userBar").innerText = "👤 User: " + username;
+
+// Unique ID for Database
+const userId = tgUser?.id || "web_user_" + Math.floor(Math.random() * 1000);
+
+// --- APP STATE ---
 let adsPlayedToday = 0;
-let cooldownTime = 180; // 3 minutes in seconds
-let timerInterval;
+let cooldownTime = 180; // 3 Minutes
+let currentCooldown = cooldownTime;
 
-// --- TELEGRAM USER LOGIC ---
-const tg = window.Telegram.WebApp;
-tg.ready();
-const username = tg.initDataUnsafe?.user?.username || "Guest_User";
-const userId = tg.initDataUnsafe?.user?.id || "anonymous";
-document.getElementById('tg-username').innerText = @${username};
-
-// --- CORE FUNCTIONS ---
-
-// 1. Daily Counter & Firebase Sync
-function syncAdsCount() {
+// --- DAILY COUNTER & SYNC ---
+function syncAdsData() {
     const today = new Date().toISOString().split('T')[0];
     const userRef = database.ref('users/' + userId);
 
-    userRef.once('value', (snapshot) => {
+    userRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.lastDate === today) {
             adsPlayedToday = data.count || 0;
         } else {
-            // New day, reset count
+            // New day or new user, reset
             adsPlayedToday = 0;
             userRef.update({ lastDate: today, count: 0 });
         }
-        updateUI();
+        document.getElementById('ads-count').innerText = adsPlayedToday;
     });
 }
 
-function incrementAds() {
+function incrementAdCounter() {
     adsPlayedToday++;
     const today = new Date().toISOString().split('T')[0];
     database.ref('users/' + userId).update({
         count: adsPlayedToday,
         lastDate: today
     });
-    updateUI();
 }
 
-function updateUI() {
-    document.getElementById('ads-count').innerText = adsPlayedToday;
-}
+// --- AD LOGIC ---
 
-// 2. Ad Implementation
+// 1. In-App Auto Settings (As requested)
+show_10555663({
+  type: 'inApp',
+  inAppSettings: {
+    frequency: 2,
+    capping: 0.1,
+    interval: 30,
+    timeout: 5,
+    everyPage: false
+  }
+});
+
+// 2. Interstitial Function
 function showInterstitial() {
     show_10555663().then(() => {
-        incrementAds();
-        console.log("Interstitial Ad Viewed");
-    }).catch(e => console.error("Ad Error:", e));
+        incrementAdCounter();
+    }).catch(e => console.log("Ad skipped or error"));
+}
+
+// 3. Popup Ad for cooldown
+function showCooldownAd() {
+    show_10555663('pop').then(() => {
+        incrementAdCounter();
+    }).catch(e => console.log("Popup error"));
 }
 
 function triggerManualAd() {
     showInterstitial();
 }
 
-// 3. Auto Show In-App Ads Logic (The 3-minute cooldown)
-function startCooldown() {
-    let current = cooldownTime;
-    timerInterval = setInterval(() => {
-        current--;
+// --- COOLDOWN TIMER (3 MINUTES) ---
+function startTimer() {
+    setInterval(() => {
+        currentCooldown--;
         
-        // Update Timer UI
-        const mins = Math.floor(current / 60);
-        const secs = current % 60;
+        const mins = Math.floor(currentCooldown / 60);
+        const secs = currentCooldown % 60;
         document.getElementById('timer').innerText = 
             ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')};
-        
-        // Update Circular Progress
-        const percent = (current / cooldownTime) * 100;
-        document.getElementById('progress-bar').setAttribute('stroke-dasharray', ${percent}, 100);
 
-        if (current <= 0) {
-            clearInterval(timerInterval);
-            // Trigger Auto Ad
-            show_10555663('pop').then(() => {
-                incrementAds();
-                startCooldown(); // Restart cycle
-            }).catch(() => {
-                startCooldown(); // Restart even if it fails
-            });
+        if (currentCooldown <= 0) {
+            currentCooldown = cooldownTime; // Reset to 3 mins
+            showCooldownAd();
         }
     }, 1000);
 }
 
-// 4. Time and Date Footer
+// --- FOOTER TIME & DATE ---
 function updateClock() {
     const now = new Date();
-    document.getElementById('footer-date').innerText = now.toLocaleDateString();
+    document.getElementById('footer-date').innerText = now.toLocaleDateString('en-GB');
     document.getElementById('footer-time').innerText = now.toLocaleTimeString();
 }
 setInterval(updateClock, 1000);
 
-// --- INITIALIZATION ---
-
+// --- INITIALIZE ON LOAD ---
 window.onload = () => {
-    syncAdsCount();
     updateClock();
+    syncAdsData();
+    startTimer();
     
-    // Requirement: Show interstitial ads limitlessly when user opens app
-    // Note: Most browsers block more than 1 immediate popup, 
-    // but we call it once on load as requested.
+    // Show interstitial immediately upon opening (Limitless requirement)
     showInterstitial();
-
-    // Start the 3-minute auto-ad cycle
-    startCooldown();
-
-    // Initialize the In-App configuration as provided in your instructions
-    show_10555663({
-        type: 'inApp',
-        inAppSettings: {
-            frequency: 2,
-            capping: 0.1,
-            interval: 30,
-            timeout: 5,
-            everyPage: false
-        }
-    });
 };
