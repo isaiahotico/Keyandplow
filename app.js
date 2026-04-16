@@ -11,10 +11,10 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
 
-// --- STATE MANAGEMENT ---
+// --- GLOBAL STATE ---
 let dailyAdsCount = 0;
+let isLimitlessActive = false;
 const USER_ID_KEY = 'ads_app_user_id';
 const ADS_STATS_KEY = 'ads_stats';
 
@@ -24,51 +24,68 @@ window.onload = () => {
     initClock();
     checkDailyReset();
     
-    // 1. Auto-show random interstitial ads limitlessly when user opens app
+    // 1. Show ad on app open
     triggerRandomInterstitial();
     
-    // 2. Setup In-App ads with 1 minute interval (as per request)
-    setupInAppAds();
+    // 2. Setup standard background heartbeat (every 1 min)
+    setInterval(() => {
+        if (!isLimitlessActive) { // Only run if limitless isn't already spamming
+            console.log("Background 1-min heartbeat trigger");
+            triggerRandomInterstitial();
+        }
+    }, 60000);
+
+    // 3. Setup the SDK's internal InApp manager
+    show_10555663({
+        type: 'inApp',
+        inAppSettings: { frequency: 5, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+    });
 };
 
-// --- USER ID LOGIC ---
+// --- CORE FUNCTIONS ---
+
 function initUser() {
     let uid = localStorage.getItem(USER_ID_KEY);
     if (!uid) {
-        uid = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        uid = 'ID-' + Math.random().toString(36).substr(2, 7).toUpperCase();
         localStorage.setItem(USER_ID_KEY, uid);
     }
     document.getElementById('userId').innerText = uid;
 }
 
-// --- CLOCK LOGIC ---
 function initClock() {
-    const updateClock = () => {
+    const update = () => {
         const now = new Date();
-        document.getElementById('currentTime').innerText = now.toLocaleTimeString();
-        document.getElementById('currentDate').innerText = now.toLocaleDateString(undefined, { 
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-        });
+        document.getElementById('currentTime').innerText = now.toLocaleTimeString([], {hour12: false});
+        document.getElementById('currentDate').innerText = now.toDateString();
         
-        // Auto-reset check every second
+        // Auto-reset check at midnight
         if(now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
             resetDailyCount();
         }
     };
-    setInterval(updateClock, 1000);
-    updateClock();
+    setInterval(update, 1000);
+    update();
 }
 
-// --- ADS LOGIC ---
+async function triggerRandomInterstitial() {
+    const adPool = [show_10555663, show_10555746, show_10555727];
+    const pick = adPool[Math.floor(Math.random() * adPool.length)];
+    
+    try {
+        await pick();
+        incrementAdsCount();
+        return true;
+    } catch (e) {        console.warn("Ad skipped or failed");
+        return false;
+    }
+}
 
 function incrementAdsCount() {
     dailyAdsCount++;
     document.getElementById('adsCount').innerText = dailyAdsCount;
-    
-    // Save to local storage
-    const today = new Date().toDateString();
     localStorage.setItem(ADS_STATS_KEY, JSON.stringify({
-        date: today,
+        date: new Date().toDateString(),
         count: dailyAdsCount
     }));
 }
@@ -76,7 +93,6 @@ function incrementAdsCount() {
 function checkDailyReset() {
     const stats = JSON.parse(localStorage.getItem(ADS_STATS_KEY));
     const today = new Date().toDateString();
-    
     if (stats && stats.date === today) {
         dailyAdsCount = stats.count;
     } else {
@@ -91,38 +107,38 @@ function resetDailyCount() {
     localStorage.removeItem(ADS_STATS_KEY);
 }
 
-// Function to call random interstitial ads
-async function triggerRandomInterstitial() {
-    const adFunctions = [show_10555663, show_10555746, show_10555727];
-    const randomIndex = Math.floor(Math.random() * adFunctions.length);
-    const selectedAd = adFunctions[randomIndex];
+// --- NEW LIMITLESS MODE LOGIC ---
 
-    try {
-        if (typeof selectedAd === 'function') {
-            await selectedAd();
-            incrementAdsCount();
-        }
-    } catch (e) {
-        console.error("Ad failed to load", e);
+async function toggleLimitlessMode() {
+    const btn = document.getElementById('btnLimitless');
+    const status = document.getElementById('autoStatus');
+
+    if (!isLimitlessActive) {
+        // Turn ON
+        isLimitlessActive = true;
+        btn.innerText = "🛑 STOP LIMITLESS";
+        btn.classList.replace('from-indigo-600', 'from-red-600');
+        btn.classList.replace('to-blue-600', 'to-red-800');
+        status.classList.remove('hidden');
+        runLimitlessLoop();
+    } else {
+        // Turn OFF
+        isLimitlessActive = false;
+        btn.innerText = "🚀 START LIMITLESS ADS";
+        btn.classList.replace('from-red-600', 'from-indigo-600');
+        btn.classList.replace('to-red-800', 'to-blue-600');
+        status.classList.add('hidden');
     }
 }
 
-// Setup In-App Ads every 1 minute
-function setupInAppAds() {
-    // Calling the SDK's internal auto-manager
-    show_10555663({
-        type: 'inApp',
-        inAppSettings: {
-            frequency: 999, // High frequency for "limitless" feel
-            capping: 0.01,   
-            interval: 60,   // 60 seconds (1 minute) cooldown
-            timeout: 5,
-            everyPage: false
-        }
-    });
-
-    // Manual backup interval to ensure ad count updates and visibility
-    setInterval(() => {
-        triggerRandomInterstitial();
-    }, 60000); // 1 minute
+async function runLimitlessLoop() {
+    while (isLimitlessActive) {
+        console.log("Limitless Mode: Triggering Ad...");
+        const success = await triggerRandomInterstitial();
+        
+        // Short delay between ads to prevent browser hanging
+        // If the ad failed, wait 3 seconds before trying again to avoid spam blocks
+        const delay = success ? 1000 : 3000; 
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
 }
