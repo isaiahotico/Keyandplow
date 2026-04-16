@@ -15,7 +15,7 @@ const db = firebase.database();
 
 // --- STATE MANAGEMENT ---
 let adCounter = 0;
-let nextAdIn = 60;
+let nextAdIn = 1;
 
 // --- UTILS ---
 const updateAdDisplay = () => {
