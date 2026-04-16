@@ -1,132 +1,75 @@
-// --- DATABASE CONFIGURATION ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "facebook-follow-to-follow.firebaseapp.com",
-    databaseURL: "https://facebook-follow-to-follow-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "facebook-follow-to-follow",
-    storageBucket: "facebook-follow-to-follow.firebasestorage.app",
-    messagingSenderId: "589427984313",
-    appId: "1:589427984313:web:a17b8cc851efde6dd79868"
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Rewards App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ad SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-between font-sans">
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+    <!-- Top Header -->
+    <header class="w-full bg-blue-600 p-4 text-white text-center shadow-lg">
+        <h1 class="text-xl font-bold tracking-wider">PREMIUM AD REWARDS</h1>
+    </header>
 
-// --- APP LOGIC ---
-
-let dailyAdCount = 0;
-let cooldownSeconds = 60;
-const COOLDOWN_TIME = 60; // 1 minute
-
-// 1. Generate or Get Unique User ID
-function getUserId() {
-    let uid = localStorage.getItem('unique_user_id');
-    if (!uid) {
-        uid = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        localStorage.setItem('unique_user_id', uid);
-    }
-    return uid;
-}
-
-// 2. Daily Counter Management
-function checkDailyReset() {
-    const today = new Date().toLocaleDateString();
-    const lastDate = localStorage.getItem('last_ad_date');
-    
-    if (lastDate !== today) {
-        localStorage.setItem('last_ad_date', today);
-        localStorage.setItem('daily_ad_count', 0);
-        dailyAdCount = 0;
-    } else {
-        dailyAdCount = parseInt(localStorage.getItem('daily_ad_count')) || 0;
-    }
-    updateUI();
-}
-
-function incrementAdCount() {
-    dailyAdCount++;
-    localStorage.setItem('daily_ad_count', dailyAdCount);
-    updateUI();
-}
-
-// 3. UI Update Logic
-function updateUI() {
-    document.getElementById('user-id').innerText = getUserId();
-    document.getElementById('ad-count').innerText = dailyAdCount;
-}
-
-// 4. Random Ad Logic
-async function triggerRandomAd() {
-    const adPool = [
-        () => show_10555663(),
-        () => show_10555746(),
-        () => show_10555727(),
-        () => show_10555663('pop')
-    ];
-
-    const randomIndex = Math.floor(Math.random() * adPool.length);
-    
-    try {
-        await adPool[randomIndex]();
-        incrementAdCount();
-        console.log("Ad successfully shown");
-    } catch (error) {
-        console.error("Ad failed to load", error);
-    }
-    
-    // Reset Cooldown after any ad (auto or manual)
-    cooldownSeconds = COOLDOWN_TIME;
-}
-
-// 5. Timers & Cooldown
-function startTimers() {
-    // Clock & Footer Date
-    setInterval(() => {
-        const now = new Date();
-        document.getElementById('footer-date').innerText = now.toLocaleDateString('en-GB', { 
-            day: '2-digit', month: 'short', year: 'numeric' 
-        });
-        document.getElementById('footer-time').innerText = now.toLocaleTimeString();
-    }, 1000);
-
-    // Ad Cooldown Interval
-    setInterval(() => {
-        cooldownSeconds--;
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-md">
         
-        // Update Progress Bar
-        const percentage = (cooldownSeconds / COOLDOWN_TIME) * 100;
-        document.getElementById('cooldown-progress').style.width = percentage + "%";
-        document.getElementById('cooldown-timer').innerText = cooldownSeconds + "s";
+        <!-- User ID Card -->
+        <div class="glass-card w-full rounded-2xl p-6 shadow-xl mb-6 border-t-4 border-blue-500">
+            <p class="text-gray-500 text-sm font-semibold uppercase mb-1">Unique User ID</p>
+            <div id="user-id" class="text-lg font-mono font-bold text-blue-800 bg-blue-50 p-3 rounded-lg border border-blue-100 break-all">
+                Loading...
+            </div>
+        </div>
 
-        if (cooldownSeconds <= 0) {
-            triggerRandomAd();
-            cooldownSeconds = COOLDOWN_TIME; // Reset
-        }
-    }, 1000);
-}
+        <!-- Ad Stats Card -->
+        <div class="glass-card w-full rounded-2xl p-6 shadow-xl text-center space-y-4">
+            <div>
+                <p class="text-gray-500 text-sm font-semibold uppercase">Daily Ads Played</p>
+                <h2 id="ad-count" class="text-5xl font-black text-slate-800">0</h2>
+            </div>
+            
+            <div class="h-px bg-gray-200 w-full"></div>
 
-// 6. Initialize In-App Settings (from your SDK snippet)
-function initInAppAds() {
-    show_10555663({
-        type: 'inApp',
-        inAppSettings: {
-            frequency: 2,
-            capping: 0.1,
-            interval: 30,
-            timeout: 5,
-            everyPage: false
-        }
-    });
-}
+            <div>
+                <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Next Auto-Ad In</p>
+                <div class="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="cooldown-progress" class="absolute top-0 left-0 h-full bg-green-500 transition-all duration-1000" style="width: 100%"></div>
+                </div>
+                <p id="cooldown-timer" class="text-sm font-bold text-green-600 mt-1">60s</p>
+            </div>
+        </div>
 
-// 7. On App Open
-window.onload = () => {
-    checkDailyReset();
-    startTimers();
-    initInAppAds();
+        <!-- Manual Button -->
+        <button onclick="triggerRandomAd()" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform active:scale-95 transition-all">
+            Watch Ad Now
+        </button>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full bg-slate-800 text-slate-300 p-4">
+        <div class="flex justify-between items-center text-xs px-4">
+            <div id="footer-date">--/--/----</div>
+            <div id="footer-time" class="font-mono text-sm font-bold text-white">00:00:00</div>
+        </div>
+    </footer>
+
+    <!-- Firebase App (Compatibility Layer) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
-    // Show first random ad automatically on open
-    setTimeout(() => {
-        triggerRandomAd();
-    }, 2000); // 2 second delay after load
-};
+    <script src="app.js"></script>
+</body>
+</html>
