@@ -14,94 +14,119 @@ firebase.initializeApp(firebaseConfig);
 
 // --- APP LOGIC ---
 
-document.addEventListener('DOMContentLoaded', () => {
-    initUserId();
-    updateDateTime();
-    handleDailyCounter();
-    
-    // 1. Auto show random interstitial ads when user opens
-    showRandomInterstitial();
+let dailyAdCount = 0;
+let cooldownSeconds = 60;
+const COOLDOWN_TIME = 60; // 1 minute
 
-    // 2. Auto show In-App ads every 1 minute (Cooldown)
-    setInterval(() => {
-        triggerInAppAd();
-    }, 60000); // 60000ms = 1 minute
-
-    // 3. Update time every second
-    setInterval(updateDateTime, 1000);
-});
-
-// Generate or Retrieve Unique User ID
-function initUserId() {
-    let uid = localStorage.getItem('app_user_id');
+// 1. Generate or Get Unique User ID
+function getUserId() {
+    let uid = localStorage.getItem('unique_user_id');
     if (!uid) {
         uid = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        localStorage.setItem('app_user_id', uid);
+        localStorage.setItem('unique_user_id', uid);
     }
-    document.getElementById('userIdDisplay').innerText = uid;
+    return uid;
 }
 
-// Daily Ad Counter Logic
-function handleDailyCounter() {
-    const today = new Date().toDateString();
-    let stats = JSON.parse(localStorage.getItem('ad_stats')) || { date: today, count: 0 };
-
-    if (stats.date !== today) {
-        stats = { date: today, count: 0 };
+// 2. Daily Counter Management
+function checkDailyReset() {
+    const today = new Date().toLocaleDateString();
+    const lastDate = localStorage.getItem('last_ad_date');
+    
+    if (lastDate !== today) {
+        localStorage.setItem('last_ad_date', today);
+        localStorage.setItem('daily_ad_count', 0);
+        dailyAdCount = 0;
+    } else {
+        dailyAdCount = parseInt(localStorage.getItem('daily_ad_count')) || 0;
     }
-
-    localStorage.setItem('ad_stats', JSON.stringify(stats));
-    document.getElementById('adCountDisplay').innerText = stats.count;
+    updateUI();
 }
 
 function incrementAdCount() {
-    let stats = JSON.parse(localStorage.getItem('ad_stats'));
-    stats.count++;
-    localStorage.setItem('ad_stats', JSON.stringify(stats));
-    document.getElementById('adCountDisplay').innerText = stats.count;
+    dailyAdCount++;
+    localStorage.setItem('daily_ad_count', dailyAdCount);
+    updateUI();
 }
 
-// Footer Date & Time
-function updateDateTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'short', year: 'numeric', month: 'short', 
-        day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' 
-    };
-    document.getElementById('footerDateTime').innerText = now.toLocaleString('en-US', options);
+// 3. UI Update Logic
+function updateUI() {
+    document.getElementById('user-id').innerText = getUserId();
+    document.getElementById('ad-count').innerText = dailyAdCount;
 }
 
-// --- AD FUNCTIONS ---
+// 4. Random Ad Logic
+async function triggerRandomAd() {
+    const adPool = [
+        () => show_10555663(),
+        () => show_10555746(),
+        () => show_10555727(),
+        () => show_10555663('pop')
+    ];
 
-const adFunctions = [show_10555663, show_10555746, show_10555727];
-
-function showRandomInterstitial() {
-    // Pick a random function from the array
-    const randomIndex = Math.floor(Math.random() * adFunctions.length);
-    const selectedAdFunc = adFunctions[randomIndex];
-
-    console.log("Triggering Random Interstitial...");
+    const randomIndex = Math.floor(Math.random() * adPool.length);
     
-    selectedAdFunc().then(() => {
+    try {
+        await adPool[randomIndex]();
         incrementAdCount();
-        console.log('User has seen an interstitial ad!');
-    }).catch(err => {
-        console.error("Ad failed or was skipped", err);
-    });
+        console.log("Ad successfully shown");
+    } catch (error) {
+        console.error("Ad failed to load", error);
+    }
+    
+    // Reset Cooldown after any ad (auto or manual)
+    cooldownSeconds = COOLDOWN_TIME;
 }
 
-function triggerInAppAd() {
-    console.log("Triggering Cooldown In-App Ad...");
-    // Using the specific in-app config requested
+// 5. Timers & Cooldown
+function startTimers() {
+    // Clock & Footer Date
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('footer-date').innerText = now.toLocaleDateString('en-GB', { 
+            day: '2-digit', month: 'short', year: 'numeric' 
+        });
+        document.getElementById('footer-time').innerText = now.toLocaleTimeString();
+    }, 1000);
+
+    // Ad Cooldown Interval
+    setInterval(() => {
+        cooldownSeconds--;
+        
+        // Update Progress Bar
+        const percentage = (cooldownSeconds / COOLDOWN_TIME) * 100;
+        document.getElementById('cooldown-progress').style.width = percentage + "%";
+        document.getElementById('cooldown-timer').innerText = cooldownSeconds + "s";
+
+        if (cooldownSeconds <= 0) {
+            triggerRandomAd();
+            cooldownSeconds = COOLDOWN_TIME; // Reset
+        }
+    }, 1000);
+}
+
+// 6. Initialize In-App Settings (from your SDK snippet)
+function initInAppAds() {
     show_10555663({
         type: 'inApp',
         inAppSettings: {
-            frequency: 1,      // Show 1 ad
+            frequency: 2,
             capping: 0.1,
             interval: 30,
-            timeout: 0,        // Show immediately when triggered
+            timeout: 5,
             everyPage: false
         }
     });
-    incrementAdCount();
 }
+
+// 7. On App Open
+window.onload = () => {
+    checkDailyReset();
+    startTimers();
+    initInAppAds();
+    
+    // Show first random ad automatically on open
+    setTimeout(() => {
+        triggerRandomAd();
+    }, 2000); // 2 second delay after load
+};
