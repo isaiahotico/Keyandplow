@@ -1,88 +1,70 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limitless Ads System</title>
+    <title>Ads Manager Dashboard</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-    <!-- LOAD ALL 3 AD SDK ZONES -->
+    <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555746'></script>
     <script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555727'></script>
 
     <style>
-        .glass-bg {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse-fast { animation: pulse-fast 0.5s infinite; }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen flex flex-col font-sans overflow-hidden">
+<body class="bg-slate-900 text-white min-h-screen flex flex-col">
 
-    <!-- Top Status Bar -->
-    <div class="p-2 bg-red-600 text-center text-[10px] font-bold uppercase tracking-tighter">
-        Limitless Mode Active: Randomizing 3 Ad Zones
-    </div>
+    <!-- Header -->
+    <header class="p-6 text-center border-b border-slate-800">
+        <h1 class="text-3xl font-bold text-blue-400">Ads System Pro</h1>
+        <p class="text-slate-400 text-sm">Automated Ad Revenue Stream</p>
+    </header>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-6 relative">
-        <div class="absolute inset-0 opacity-20 pointer-events-none">
-            <div class="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full filter blur-3xl"></div>
-            <div class="absolute bottom-10 right-10 w-32 h-32 bg-purple-500 rounded-full filter blur-3xl"></div>
-        </div>
-
-        <div class="glass-bg rounded-3xl p-10 w-full max-w-sm shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] z-10">
-            <div class="text-center mb-6">
-                <h2 class="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Total Ads Played Today</h2>
-                <div id="ads-count" class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-500 mt-2">0</div>
-            </div>
-
-            <div class="space-y-3">
-                <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
-
-                    <span class="text-xs font-medium text-slate-400">Current Zone</span>
-                    <span id="active-zone" class="text-xs font-mono text-yellow-400">Initializing...</span>
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
+        
+        <!-- Stats Card -->
+        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
+            <h2 class="text-xl font-semibold mb-2">Daily Ads Played</h2>
+            <div id="ad-count" class="text-6xl font-black text-green-400 my-4">0</div>
+            <p class="text-slate-400 text-xs">Resets automatically at midnight</p>
+            
+            <div class="mt-8 space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span>Status:</span>
+                    <span class="text-green-500 font-bold animate-pulse">Running</span>
                 </div>
-                
-                <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
-                    <span class="text-xs font-medium text-slate-400">Loop Interval</span>
-                    <span class="text-xs font-bold text-green-400 animate-pulse-fast">1 SECOND</span>
-                </div>
-            </div>
-
-            <div class="mt-8">
-                <div id="progress-bar-container" class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-blue-500 w-0 transition-all duration-300"></div>
+                <div class="flex justify-between text-sm">
+                    <span>Next Auto-Ad:</span>
+                    <span id="cooldown-timer" class="text-blue-400">60s</span>
                 </div>
             </div>
         </div>
+
+        <button onclick="manualTrigger()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full transition-all">
+            Manual Trigger
+        </button>
     </main>
 
     <!-- Footer -->
-    <footer class="p-6 bg-slate-900/80 border-t border-slate-800 backdrop-blur-md">
-        <div class="flex justify-between items-center max-w-sm mx-auto">
-            <div class="text-left">
-                <div id="footer-time" class="text-2xl font-black tracking-tighter text-white leading-none">00:00:00</div>
-                <div id="footer-date" class="text-[10px] text-slate-500 uppercase mt-1">Date Loading...</div>
-            </div>
-            <div class="text-right">
-                <div class="text-[10px] text-blue-500 font-bold uppercase leading-none">Status</div>
-                <div class="text-xs text-green-400 font-bold">LIVE SYNC</div>
-            </div>
+    <footer class="p-4 bg-slate-950 border-t border-slate-800 text-center">
+        <div id="footer-date" class="text-sm font-mono text-slate-500">
+            -- Loading Date & Time --
         </div>
     </footer>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Custom App Logic -->
     <script src="app.js"></script>
 </body>
 </html>
