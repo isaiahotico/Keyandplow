@@ -13,105 +13,101 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- STATE MANAGEMENT ---
+// --- STATE ---
 let adCounter = 0;
-let nextAdIn = 1;
+let cooldownSeconds = 60;
+let isRunning = false;
 
-// --- UTILS ---
-const updateAdDisplay = () => {
+// --- AD LOGIC WRAPPERS ---
+const adFunctions = [
+    () => show_10555663(), // Standard
+    () => show_10555663('pop'), // Popup
+    () => show_10555746(), // Reward 1
+    () => show_10555727(), // Reward 2
+    () => show_10555663({ // InApp Settings
+        type: 'inApp',
+        inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+    })
+];
+
+const triggerRandomAd = () => {
+    const randomIdx = Math.floor(Math.random() * adFunctions.length);
+    console.log(`System: Triggering Ad Variation ${randomIdx}`);
+    
+    adFunctions[randomIdx]().then(() => {
+        updateStats();
+    }).catch(e => {
+        // Many ads count as "shown" even if errored or closed
+        updateStats(); 
+    });
+};
+
+// --- CORE FUNCTIONS ---
+const updateStats = () => {
+    adCounter++;
+    document.getElementById('ad-count').innerText = adCounter;
+    localStorage.setItem('ad_count_today', adCounter);
+    db.ref('stats/dailyCount').set(adCounter);
+};
+
+const checkDailyReset = () => {
+    const today = new Date().toLocaleDateString();
+    const lastDate = localStorage.getItem('last_reset_date');
+    
+    if (lastDate !== today) {
+        adCounter = 0;
+        localStorage.setItem('last_reset_date', today);
+        localStorage.setItem('ad_count_today', 0);
+        db.ref('stats/dailyCount').set(0);
+    } else {
+        adCounter = parseInt(localStorage.getItem('ad_count_today')) || 0;
+    }
     document.getElementById('ad-count').innerText = adCounter;
 };
 
-const updateDateTime = () => {
+const updateClock = () => {
     const now = new Date();
     document.getElementById('footer-date').innerText = now.toLocaleString();
 };
 
-// --- DAILY RESET LOGIC ---
-const checkDailyReset = () => {
-    const today = new Date().toLocaleDateString();
-    const lastDate = localStorage.getItem('last_ad_date');
+// --- AUTOMATION LOOPS ---
 
-    if (lastDate !== today) {
-        adCounter = 0;
-        localStorage.setItem('last_ad_date', today);
-        saveCounterToDB(0);
-    } else {
-        // Load from LocalStorage or Firebase
-        const savedCount = localStorage.getItem('ad_count');
-        adCounter = savedCount ? parseInt(savedCount) : 0;
-    }
-    updateAdDisplay();
+const startAutomation = () => {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById('unlock-layer').style.display = 'none';
+
+    // 1. "Limitless" Loop - Triggers a random ad every 20 seconds indefinitely
+    setInterval(() => {
+        triggerRandomAd();
+    }, 20000); 
+
+    // 2. Cooldown Loop - 1 minute countdown for In-App specific trigger
+    setInterval(() => {
+        cooldownSeconds--;
+        
+        // Update UI
+        const progress = ((60 - cooldownSeconds) / 60) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+        document.getElementById('cooldown-timer').innerText = `${cooldownSeconds}s`;
+
+        if (cooldownSeconds <= 0) {
+            // Trigger the In-App specific ad
+            adFunctions[4](); 
+            updateStats();
+            cooldownSeconds = 60;
+        }
+    }, 1000);
+
+    // Initial Trigger on start
+    triggerRandomAd();
 };
-
-const incrementAdCount = () => {
-    adCounter++;
-    localStorage.setItem('ad_count', adCounter);
-    updateAdDisplay();
-    saveCounterToDB(adCounter);
-};
-
-const saveCounterToDB = (count) => {
-    db.ref('stats/dailyCount').set(count);
-};
-
-// --- AD TRIGGER LOGIC ---
-const showRandomAd = () => {
-    const adSelectors = [
-        () => show_10555663(),
-        () => show_10555663('pop'),
-        () => show_10555746(),
-        () => show_10555727(),
-        () => show_10555663({
-            type: 'inApp',
-            inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-        })
-    ];
-
-    const randomIdx = Math.floor(Math.random() * adSelectors.length);
-    console.log(`Triggering Ad variation #${randomIdx}`);
-
-    try {
-        adSelectors[randomIdx]().then(() => {
-            incrementAdCount();
-        }).catch(e => console.log("Ad skipped or blocked"));
-    } catch (err) {
-        console.error("Ad SDK error", err);
-    }
-};
-
-// Limitless auto-show on open (initial burst)
-const initialBurst = () => {
-    let count = 0;
-    const burstInterval = setInterval(() => {
-        showRandomAd();
-        count++;
-        if (count >= 5) clearInterval(burstInterval); // Limit burst to 5 to avoid browser crash
-    }, 2000);
-};
-
-// Manual button trigger
-const manualTrigger = () => {
-    showRandomAd();
-};
-
-// --- TIMERS ---
-// Footer clock
-setInterval(updateDateTime, 1000);
-
-// 1 Minute Cooldown Loop
-setInterval(() => {
-    nextAdIn--;
-    if (nextAdIn <= 0) {
-        showRandomAd();
-        nextAdIn = 60;
-    }
-    document.getElementById('cooldown-timer').innerText = nextAdIn + "s";
-}, 1000);
 
 // --- INITIALIZE ---
 window.onload = () => {
-    updateDateTime();
     checkDailyReset();
-    initialBurst(); // Auto-show on open
+    setInterval(updateClock, 1000);
+
+    // Modern browsers block automatic ads until first click
+    document.getElementById('unlock-layer').addEventListener('click', startAutomation);
 };
