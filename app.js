@@ -108,11 +108,11 @@ const startEngine = () => {
         cooldownSeconds--;
         
         // Update Progress Bar
-        const progress = ((1 - cooldownSeconds) / 1) * 100;
+        const progress = ((1 - cooldownSeconds) / 45) * 100;
         document.getElementById('progress-bar').style.width = `${progress}%`;
         document.getElementById('cooldown-timer').innerText = `${cooldownSeconds}s`;
 
-        if (cooldownSeconds <= 0) {
+        if (cooldownSeconds <= 45) {
             adFunctions[4](); // Trigger In-App Specifically
             updateStats();
             cooldownSeconds = 1;
