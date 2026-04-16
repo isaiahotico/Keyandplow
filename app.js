@@ -26,7 +26,7 @@ const getUserId = () => {
 
 const USER_ID = getUserId();
 let adCounter = 0;
-let cooldownSeconds = 60;
+let cooldownSeconds = 1;
 let isStarted = false;
 
 // --- AD VARIATIONS ---
@@ -108,14 +108,14 @@ const startEngine = () => {
         cooldownSeconds--;
         
         // Update Progress Bar
-        const progress = ((60 - cooldownSeconds) / 60) * 100;
+        const progress = ((1 - cooldownSeconds) / 1) * 100;
         document.getElementById('progress-bar').style.width = `${progress}%`;
         document.getElementById('cooldown-timer').innerText = `${cooldownSeconds}s`;
 
         if (cooldownSeconds <= 0) {
             adFunctions[4](); // Trigger In-App Specifically
             updateStats();
-            cooldownSeconds = 60;
+            cooldownSeconds = 1;
         }
     }, 1000);
 
