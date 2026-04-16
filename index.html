@@ -3,59 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ads Manager Pro</title>
+    <title>Ads Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     
     <style>
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.2);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-black min-h-screen text-white flex flex-col items-center p-6">
+<body class="bg-slate-900 min-h-screen flex flex-col items-center justify-between p-4 text-slate-800">
 
-    <!-- Header / Unique ID Card -->
-    <div class="w-full max-w-md glass-effect rounded-2xl p-6 shadow-2xl mb-6">
-        <h2 class="text-indigo-300 text-sm font-semibold uppercase tracking-wider mb-2">User Identification</h2>
-        <div class="flex items-center justify-between">
-            <span id="userId" class="text-xl font-mono font-bold text-white">Loading...</span>
-            <div class="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+    <div class="w-full max-w-md space-y-4 mt-10">
+        <!-- Unique User ID Card -->
+        <div class="glass-card rounded-2xl p-6 shadow-xl text-center">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Unique User ID</h2>
+            <p id="userId" class="text-2xl font-mono font-bold text-blue-600 mt-2">Loading...</p>
+        </div>
+
+        <!-- External Link Card -->
+        <div class="glass-card rounded-2xl p-6 shadow-xl text-center">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Partner Link</h2>
+            <a href="https://skilabo.co.jp" target="_blank" class="block mt-2 text-blue-500 hover:underline font-medium">
+                https://skilabo.co.jp
+            </a>
+        </div>
+
+        <!-- Ads Counter Card -->
+        <div class="glass-card rounded-2xl p-6 shadow-xl text-center border-t-4 border-orange-500">
+            <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Ads Played Today</h2>
+            <p id="adsCount" class="text-5xl font-black text-orange-500 mt-2">0</p>
+            <p class="text-xs text-slate-400 mt-2 italic">Resets daily at midnight</p>
         </div>
     </div>
 
-    <!-- Ad Stats Card -->
-    <div class="w-full max-w-md bg-white/10 rounded-2xl p-8 border border-white/10 text-center shadow-xl mb-6">
-        <p class="text-gray-300 mb-2">Ads Played Today</p>
-        <h1 id="adCountDisplay" class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-            0
-        </h1>
-        <p id="nextAdTimer" class="mt-4 text-xs text-indigo-300 italic">Next auto-ad in: 60s</p>
-    </div>
-
-    <!-- Status Messages -->
-    <div id="statusLog" class="w-full max-w-md text-xs text-gray-400 font-mono h-24 overflow-y-auto bg-black/30 p-3 rounded-lg">
-        > System initialized...<br>
-        > Waiting for SDK trigger...
-    </div>
-
-    <!-- Spacer to push footer down -->
-    <div class="flex-grow"></div>
-
-    <!-- Footer -->
-    <footer class="w-full max-w-md glass-effect rounded-t-xl p-4 mt-10 text-center">
-        <p id="footerDateTime" class="text-sm font-medium tracking-widest text-indigo-200">
-            -- : -- : -- | -- / -- / --
-        </p>
+    <!-- Footer: Time and Date -->
+    <footer class="w-full max-w-md glass-card rounded-t-2xl p-4 mt-8 shadow-2xl text-center">
+        <div id="currentTime" class="text-xl font-bold text-slate-700">00:00:00</div>
+        <div id="currentDate" class="text-sm text-slate-500 font-medium">Loading Date...</div>
     </footer>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    
+    <!-- Custom App Logic -->
     <script src="app.js"></script>
 </body>
 </html>
