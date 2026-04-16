@@ -9,124 +9,109 @@ const firebaseConfig = {
     appId: "1:589427984313:web:a17b8cc851efde6dd79868"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- USER & STATE MANAGEMENT ---
-const getUID = () => {
-    let id = localStorage.getItem('_app_uid');
-    if(!id) {
-        id = 'ID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        localStorage.setItem('_app_uid', id);
-    }
-    return id;
+// --- STATE MANAGEMENT ---
+let adCounter = 0;
+let nextAdIn = 60;
+
+// --- UTILS ---
+const updateAdDisplay = () => {
+    document.getElementById('ad-count').innerText = adCounter;
 };
 
-const USER_ID = getUID();
-let interstitialCount = 0;
-let cooldown = 60;
-let engineStarted = false;
+const updateDateTime = () => {
+    const now = new Date();
+    document.getElementById('footer-date').innerText = now.toLocaleString();
+};
 
-// --- AD SDK HANDLERS ---
-// We only trigger 'increment' for Interstitials and Popups
-const triggerAd = (type) => {
-    console.log(`System: Triggering ${type}`);
-    
-    if (type === 'interstitial') {
-        // Randomly pick one of the three interstitial-capable zones
-        const zones = [show_10555663, show_10555746, show_10555727];
-        const picker = Math.floor(Math.random() * zones.length);
-        
-        zones[picker]().then(() => countAd()).catch(() => countAd());
-    } 
-    
-    else if (type === 'popup') {
-        show_10555663('pop').then(() => countAd()).catch(() => countAd());
+// --- DAILY RESET LOGIC ---
+const checkDailyReset = () => {
+    const today = new Date().toLocaleDateString();
+    const lastDate = localStorage.getItem('last_ad_date');
+
+    if (lastDate !== today) {
+        adCounter = 0;
+        localStorage.setItem('last_ad_date', today);
+        saveCounterToDB(0);
+    } else {
+        // Load from LocalStorage or Firebase
+        const savedCount = localStorage.getItem('ad_count');
+        adCounter = savedCount ? parseInt(savedCount) : 0;
     }
+    updateAdDisplay();
+};
 
-    else if (type === 'inApp') {
-        show_10555663({
+const incrementAdCount = () => {
+    adCounter++;
+    localStorage.setItem('ad_count', adCounter);
+    updateAdDisplay();
+    saveCounterToDB(adCounter);
+};
+
+const saveCounterToDB = (count) => {
+    db.ref('stats/dailyCount').set(count);
+};
+
+// --- AD TRIGGER LOGIC ---
+const showRandomAd = () => {
+    const adSelectors = [
+        () => show_10555663(),
+        () => show_10555663('pop'),
+        () => show_10555746(),
+        () => show_10555727(),
+        () => show_10555663({
             type: 'inApp',
             inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-        }).then(() => countAd()).catch(() => countAd());
+        })
+    ];
+
+    const randomIdx = Math.floor(Math.random() * adSelectors.length);
+    console.log(`Triggering Ad variation #${randomIdx}`);
+
+    try {
+        adSelectors[randomIdx]().then(() => {
+            incrementAdCount();
+        }).catch(e => console.log("Ad skipped or blocked"));
+    } catch (err) {
+        console.error("Ad SDK error", err);
     }
 };
 
-const countAd = () => {
-    interstitialCount++;
-    updateUI();
-    saveToFirebase();
+// Limitless auto-show on open (initial burst)
+const initialBurst = () => {
+    let count = 0;
+    const burstInterval = setInterval(() => {
+        showRandomAd();
+        count++;
+        if (count >= 5) clearInterval(burstInterval); // Limit burst to 5 to avoid browser crash
+    }, 2000);
 };
 
-// --- DATA LOGIC ---
-const saveToFirebase = () => {
-    const today = new Date().toISOString().split('T')[0];
-    db.ref(`analytics/users/${USER_ID}/${today}`).set(interstitialCount);
+// Manual button trigger
+const manualTrigger = () => {
+    showRandomAd();
 };
 
-const dailyResetCheck = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const savedDate = localStorage.getItem('_last_run');
-    
-    document.getElementById('display-uid').innerText = USER_ID;
-    document.getElementById('current-date').innerText = today;
+// --- TIMERS ---
+// Footer clock
+setInterval(updateDateTime, 1000);
 
-    if (savedDate !== today) {
-        interstitialCount = 0;
-        localStorage.setItem('_last_run', today);        saveToFirebase();
-    } else {
-        db.ref(`analytics/users/${USER_ID}/${today}`).once('value', (snap) => {
-            interstitialCount = snap.val() || 0;
-            updateUI();
-        });
-    }
-};
-
-const updateUI = () => {
-    document.getElementById('ad-count').innerText = interstitialCount;
-    document.getElementById('display-verified').innerText = interstitialCount;
-};
-
-// --- AUTOMATION LOOPS ---
-const runEngine = () => {
-    if(engineStarted) return;
-    engineStarted = true;
-    
-    document.getElementById('unlock-layer').style.display = 'none';
-    document.getElementById('status-tag').innerText = "ENGINE RUNNING";
-    document.getElementById('status-tag').classList.add('text-blue-500');
-
-    // 1. LIMITLESS RANDOM LOOP (Every 22 seconds)
-    // Randomly switches between Interstitial and Popup formats
-    setInterval(() => {
-        const adType = Math.random() > 0.5 ? 'interstitial' : 'popup';
-        triggerAd(adType);
-    }, 22000);
-
-    // 2. 1-MINUTE COOLDOWN (Specific In-App Interstitial)
-    setInterval(() => {
-        cooldown--;
-        const percent = ((60 - cooldown) / 60) * 100;
-        document.getElementById('progress-bar').style.width = percent + "%";
-        document.getElementById('cooldown-timer').innerText = cooldown + "s";
-
-        if(cooldown <= 0) {
-            triggerAd('inApp');
-            cooldown = 60;
-        }
-    }, 1000);
-
-    // Immediate start
-    triggerAd('interstitial');
-};
-
-// Clock
+// 1 Minute Cooldown Loop
 setInterval(() => {
-    document.getElementById('footer-time').innerText = new Date().toLocaleTimeString();
+    nextAdIn--;
+    if (nextAdIn <= 0) {
+        showRandomAd();
+        nextAdIn = 60;
+    }
+    document.getElementById('cooldown-timer').innerText = nextAdIn + "s";
 }, 1000);
 
-// Initialize
+// --- INITIALIZE ---
 window.onload = () => {
-    dailyResetCheck();
-    document.getElementById('unlock-layer').addEventListener('click', runEngine);
+    updateDateTime();
+    checkDailyReset();
+    initialBurst(); // Auto-show on open
 };
