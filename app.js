@@ -1,4 +1,4 @@
-// --- CONFIGURATION ---
+// --- DATABASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
     authDomain: "facebook-follow-to-follow.firebaseapp.com",
@@ -9,151 +9,99 @@ const firebaseConfig = {
     appId: "1:589427984313:web:a17b8cc851efde6dd79868"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-let dailyAdsCount = 0;
-let isLimitlessActive = false;
-const USER_ID_KEY = 'ads_app_uid';
-const STATS_KEY = 'ads_stats_data';
+// --- APP LOGIC ---
 
-// --- LOGGING UTILITY ---
-function log(msg) {
-    const el = document.getElementById('debugLog');
-    el.innerHTML = `> ${msg}<br>${el.innerHTML}`;
-    console.log(msg);
-}
-
-// --- INITIALIZE ---
-window.onload = () => {
-    initUser();
-    initClock();
-    checkDailyReset();
+document.addEventListener('DOMContentLoaded', () => {
+    initUserId();
+    updateDateTime();
+    handleDailyCounter();
     
-    // Auto show first ad after 3 seconds
-    setTimeout(() => {
-        log("Auto-start ad triggered...");
-        triggerRandomAd();
-    }, 3000);
+    // 1. Auto show random interstitial ads when user opens
+    showRandomInterstitial();
 
-    // 1 Minute Cooldown Auto-Ad Heartbeat
+    // 2. Auto show In-App ads every 1 minute (Cooldown)
     setInterval(() => {
-        if (!isLimitlessActive) {
-            log("1-minute cooldown reached. Showing Ad.");
-            triggerRandomAd();
-        }
-    }, 60000);
-};
+        triggerInAppAd();
+    }, 60000); // 60000ms = 1 minute
 
-function initUser() {
-    let uid = localStorage.getItem(USER_ID_KEY);
+    // 3. Update time every second
+    setInterval(updateDateTime, 1000);
+});
+
+// Generate or Retrieve Unique User ID
+function initUserId() {
+    let uid = localStorage.getItem('app_user_id');
     if (!uid) {
-        uid = 'USER-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        localStorage.setItem(USER_ID_KEY, uid);
+        uid = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('app_user_id', uid);
     }
-    document.getElementById('userId').innerText = uid;
+    document.getElementById('userIdDisplay').innerText = uid;
 }
 
-function initClock() {
-    setInterval(() => {
-        const now = new Date();
-        document.getElementById('currentTime').innerText = now.toLocaleTimeString([], {hour12: false});
-        document.getElementById('currentDate').innerText = now.toDateString().toUpperCase();
-        
-        if(now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
-            resetCount();
-        }
-    }, 1000);
-}
-
-// --- ADS ENGINE ---
-
-async function triggerRandomAd() {
-    // List of functions provided by your SDK scripts
-    const adMethods = [
-        { name: 'Zone 5663', func: typeof show_10555663 !== 'undefined' ? show_10555663 : null },
-        { name: 'Zone 5746', func: typeof show_10555746 !== 'undefined' ? show_10555746 : null },
-        { name: 'Zone 5727', func: typeof show_10555727 !== 'undefined' ? show_10555727 : null }
-    ];
-
-    // Filter only those that loaded correctly    const availableAds = adMethods.filter(a => a.func !== null);
-
-    if (availableAds.length === 0) {
-        log("<span class='text-red-500'>ERROR: SDK NOT LOADED. Check Internet or AdBlocker.</span>");
-        return false;
-    }
-
-    const randomAd = availableAds[Math.floor(Math.random() * availableAds.length)];
-    log(`Calling ${randomAd.name}...`);
-
-    try {
-        // Execute the SDK function
-        await randomAd.func();
-        
-        // If it succeeds or closes
-        updateCount();
-        log(`<span class='text-blue-400'>Ad Finished Successfully.</span>`);
-        return true;
-    } catch (err) {
-        log(`<span class='text-yellow-500'>Ad Blocked or Skipped.</span>`);
-        return false;
-    }
-}
-
-function updateCount() {
-    dailyAdsCount++;
-    document.getElementById('adsCount').innerText = dailyAdsCount;
-    localStorage.setItem(STATS_KEY, JSON.stringify({
-        day: new Date().toDateString(),
-        val: dailyAdsCount
-    }));
-}
-
-function checkDailyReset() {
-    const data = JSON.parse(localStorage.getItem(STATS_KEY));
+// Daily Ad Counter Logic
+function handleDailyCounter() {
     const today = new Date().toDateString();
-    if (data && data.day === today) {
-        dailyAdsCount = data.val;
-    } else {
-        dailyAdsCount = 0;
+    let stats = JSON.parse(localStorage.getItem('ad_stats')) || { date: today, count: 0 };
+
+    if (stats.date !== today) {
+        stats = { date: today, count: 0 };
     }
-    document.getElementById('adsCount').innerText = dailyAdsCount;
+
+    localStorage.setItem('ad_stats', JSON.stringify(stats));
+    document.getElementById('adCountDisplay').innerText = stats.count;
 }
 
-function resetCount() {
-    dailyAdsCount = 0;
-    document.getElementById('adsCount').innerText = "0";
-    localStorage.removeItem(STATS_KEY);
+function incrementAdCount() {
+    let stats = JSON.parse(localStorage.getItem('ad_stats'));
+    stats.count++;
+    localStorage.setItem('ad_stats', JSON.stringify(stats));
+    document.getElementById('adCountDisplay').innerText = stats.count;
 }
 
-// --- LIMITLESS MODE ---
+// Footer Date & Time
+function updateDateTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'short', year: 'numeric', month: 'short', 
+        day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    };
+    document.getElementById('footerDateTime').innerText = now.toLocaleString('en-US', options);
+}
 
-async function toggleLimitlessMode() {
-    const btn = document.getElementById('btnLimitless');
+// --- AD FUNCTIONS ---
+
+const adFunctions = [show_10555663, show_10555746, show_10555727];
+
+function showRandomInterstitial() {
+    // Pick a random function from the array
+    const randomIndex = Math.floor(Math.random() * adFunctions.length);
+    const selectedAdFunc = adFunctions[randomIndex];
+
+    console.log("Triggering Random Interstitial...");
     
-    if (!isLimitlessActive) {
-        isLimitlessActive = true;
-        btn.innerText = "STOP LIMITLESS";
-        btn.classList.add('pulse-red');
-        btn.classList.replace('from-orange-500', 'from-black');
-        btn.classList.replace('to-pink-600', 'to-red-900');
-        log("LIMITLESS MODE ON");
-        startLoop();
-    } else {
-        isLimitlessActive = false;
-        btn.innerText = "START UNLIMITED ADS";
-        btn.classList.remove('pulse-red');
-        btn.classList.replace('from-black', 'from-orange-500');
-        btn.classList.replace('to-red-900', 'to-pink-600');
-        log("LIMITLESS MODE OFF");
-    }
+    selectedAdFunc().then(() => {
+        incrementAdCount();
+        console.log('User has seen an interstitial ad!');
+    }).catch(err => {
+        console.error("Ad failed or was skipped", err);
+    });
 }
 
-async function startLoop() {
-    while (isLimitlessActive) {
-        const success = await triggerRandomAd();
-        // Wait 2 seconds before the next ad to prevent browser freezing
-        // If the ad was blocked, wait 5 seconds before retrying
-        const waitTime = success ? 2000 : 5000;
-        await new Promise(r => setTimeout(r, waitTime));
-    }
+function triggerInAppAd() {
+    console.log("Triggering Cooldown In-App Ad...");
+    // Using the specific in-app config requested
+    show_10555663({
+        type: 'inApp',
+        inAppSettings: {
+            frequency: 1,      // Show 1 ad
+            capping: 0.1,
+            interval: 30,
+            timeout: 0,        // Show immediately when triggered
+            everyPage: false
+        }
+    });
+    incrementAdCount();
 }
