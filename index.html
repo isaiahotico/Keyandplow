@@ -1,73 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Ads Reward Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Ad SDK -->
-    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script> 
-    <script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555663'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555663'></script>
+// --- DATABASE CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
+    authDomain: "facebook-follow-to-follow.firebaseapp.com",
+    databaseURL: "https://facebook-follow-to-follow-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "facebook-follow-to-follow",
+    storageBucket: "facebook-follow-to-follow.firebasestorage.app",
+    messagingSenderId: "589427984313",
+    appId: "1:589427984313:web:a17b8cc851efde6dd79868"
+};
 
-</head>
-<body class="bg-slate-950 text-white min-h-screen flex flex-col font-sans">
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
-    <!-- Header -->
-    <header class="p-6 text-center border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
-        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-            Ads Auto-Revenue
-        </h1>
-    </header>
+// --- STATE MANAGEMENT ---
+let adsWatched = 0;
+let userId = "";
 
-    <!-- Main Content -->
-    <main class="flex-grow p-4 space-y-6 max-w-md mx-auto w-full">
-        
-        <!-- Unique User ID Card -->
-        <div class="bg-slate-900 p-5 rounded-3xl shadow-2xl border border-slate-800">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-slate-500 text-xs font-bold uppercase tracking-widest">User Identity</h2>
-                <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-            </div>
-            <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                <span id="userId" class="text-sm font-mono text-blue-400">Generating...</span>
-                <button onclick="copyUID()" class="text-[10px] bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all">COPY</button>
-            </div>
-        </div>
+// --- UTILS ---
+const generateUserId = () => {
+    let id = localStorage.getItem('unique_user_id');
+    if (!id) {
+        id = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('unique_user_id', id);
+    }
+    return id;
+};
 
-        <!-- Ad Count Card -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-3xl shadow-2xl">
-            <div class="relative z-10">
-                <h2 class="text-blue-100 text-sm font-medium opacity-80">Daily Ads Completed</h2>
-                <div id="adCount" class="text-7xl font-black my-2">0</div>
-                <p class="text-xs text-blue-200/60 italic font-light">Resets automatically at midnight</p>
-            </div>
-            <!-- Decorative circle -->
-            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-        </div>
+const checkDailyReset = () => {
+    const lastDate = localStorage.getItem('last_ads_date');
+    const today = new Date().toLocaleDateString();
 
-        <!-- System Status -->
-        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-            <div id="status" class="text-center text-xs text-slate-400">
-                System Initializing...
-            </div>
-        </div>
+    if (lastDate !== today) {
+        adsWatched = 0;
+        localStorage.setItem('ads_count', 0);
+        localStorage.setItem('last_ads_date', today);
+    } else {
+        adsWatched = parseInt(localStorage.getItem('ads_count')) || 0;
+    }
+    document.getElementById('dailyCount').innerText = adsWatched;
+};
 
-    </main>
+const updateCount = () => {
+    adsWatched++;
+    localStorage.setItem('ads_count', adsWatched);
+    document.getElementById('dailyCount').innerText = adsWatched;
+    
+    // Optional: Sync with Firebase
+    database.ref('users/' + userId).set({
+        lastActive: new Date().toISOString(),
+        adsCount: adsWatched
+    });
+};
 
-    <!-- Footer -->
-    <footer class="p-6 bg-slate-900 border-t border-slate-800 text-center">
-        <div id="footerDate" class="text-slate-500 text-[10px] uppercase tracking-tighter mb-1"></div>
-        <div id="footerTime" class="text-xl font-mono font-bold text-slate-300"></div>
-    </footer>
+// --- AD LOGIC ---
+const adFunctions = [
+    () => typeof show_10555663 === 'function' ? show_10555663() : Promise.reject(),
+    () => typeof show_10555746 === 'function' ? show_10555746() : Promise.reject(),
+    () => typeof show_10555727 === 'function' ? show_10555727() : Promise.reject()
+];
 
-    <script type="module" src="app.js"></script>
-    <script>
-        function copyUID() {
-            const id = document.getElementById('userId').innerText;
-            navigator.clipboard.writeText(id);
-            alert('UID Copied to clipboard');
+async function startAutoAds() {
+    // 2-second cooldown/delay before the first ad and between ads
+    console.log("Cooldown started...");
+    document.getElementById('statusIndicator').innerHTML = <p class="text-sm text-yellow-400 font-medium italic">Preparing next ad (2s)...</p>;
+    
+    setTimeout(async () => {
+        try {
+            // Pick a random ad function from the array
+            const randomIndex = Math.floor(Math.random() * adFunctions.length);
+            const randomAd = adFunctions[randomIndex];
+
+            document.getElementById('statusIndicator').innerHTML = <p class="text-sm text-cyan-400 font-medium italic">Ad playing...</p>;
+            
+            await randomAd();
+            
+            // Success
+            updateCount();
+            console.log("Ad finished. Restarting loop...");
+            startAutoAds(); // Loop again
+
+        } catch (error) {
+            console.error("Ad failed to load or closed early", error);
+            // Even if it fails, wait and try again
+            startAutoAds();
         }
-    </script>
-</body>
-</html>
+    }, 2000); 
+}
+
+// --- CLOCK & FOOTER ---
+function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false });
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    
+    document.getElementById('footerTime').innerText = timeStr;
+    document.getElementById('footerDate').innerText = dateStr;
+}
+
+// --- INITIALIZATION ---
+window.onload = () => {
+    userId = generateUserId();
+    document.getElementById('userIdDisplay').innerText = userId;
+    
+    checkDailyReset();
+    
+    // Start Clock
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Start Auto Ad Cycle after a brief initial delay
+    startAutoAds();
+};
