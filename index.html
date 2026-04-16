@@ -3,99 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad-Engine: Auto-Interstitials</title>
+    <title>Ads Manager Dashboard</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Ad SDKs -->
+    <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555746'></script>
     <script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555727'></script>
 
     <style>
-        .glass-panel { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); }
-        .glow-text { text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
-        @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .active-dot { animation: pulse-fast 1s infinite; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-300 min-h-screen flex flex-col font-sans">
-
-    <!-- Browser Unlock Layer -->
-    <div id="unlock-layer" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 cursor-pointer">
-        <div class="text-center group">
-            <div class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_50px_rgba(37,99,235,0.3)] transition-transform group-hover:scale-110">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <h2 class="text-3xl font-black text-white tracking-tighter mb-2">INITIALIZE ADS</h2>
-            <p class="text-slate-500 font-mono text-sm uppercase tracking-widest">Click anywhere to start automation</p>
-        </div>
-    </div>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="p-5 flex justify-between items-center border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-blue-500 rounded-full active-dot"></div>
-            <span class="text-[10px] font-bold tracking-[0.4em] uppercase text-slate-500">Auto-Ads Engine</span>
-        </div>        <div id="status-tag" class="text-[10px] font-mono text-slate-600">IDLE</div>
+    <header class="p-6 text-center border-b border-slate-800">
+        <h1 class="text-3xl font-bold text-blue-400">Ads System Pro</h1>
+        <p class="text-slate-400 text-sm">Automated Ad Revenue Stream</p>
     </header>
 
-    <!-- Main Dashboard -->
-    <main class="flex-grow flex flex-col items-center justify-center p-6 gap-8">
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
         
-        <!-- Large Counter -->
-        <div class="text-center">
-            <h3 class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mb-4">Interstitials & Popups Today</h3>
-            <div id="ad-count" class="text-9xl font-black text-white glow-text">0</div>
-        </div>
-
-        <!-- Cooldown Progress -->
-        <div class="w-full max-w-xs space-y-2">
-            <div class="flex justify-between text-[10px] font-mono text-slate-500">
-                <span>SYSTEM CYCLE</span>
-                <span id="cooldown-timer">60s</span>
-            </div>
-            <div class="h-1 bg-slate-900 rounded-full overflow-hidden">
-                <div id="progress-bar" class="h-full bg-blue-600 transition-all duration-1000 linear" style="width: 0%"></div>
-            </div>
-        </div>
-
-        <!-- Unique User Card (50% Width) -->
-        <div class="glass-panel w-full md:w-1/2 p-6 rounded-3xl border border-white/10 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <div class="px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20 text-[10px] text-blue-400 font-bold uppercase">User Profile</div>
-                <div class="text-[10px] text-slate-500 font-mono" id="current-date">--/--/--</div>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[9px] text-slate-600 uppercase font-bold tracking-widest block mb-1">Unique Identifier</label>
-                    <p id="display-uid" class="font-mono text-sm text-slate-300">GENERATING...</p>
+        <!-- Stats Card -->
+        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
+            <h2 class="text-xl font-semibold mb-2">Daily Ads Played</h2>
+            <div id="ad-count" class="text-6xl font-black text-green-400 my-4">0</div>
+            <p class="text-slate-400 text-xs">Resets automatically at midnight</p>
+            
+            <div class="mt-8 space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span>Status:</span>
+                    <span class="text-green-500 font-bold animate-pulse">Running</span>
                 </div>
-                <div class="pt-4 border-t border-white/5 flex justify-between">
-                    <div>
-                        <label class="text-[9px] text-slate-600 uppercase font-bold block">Session Status</label>
-                        <p class="text-xs text-green-500 font-bold">ACTIVE</p>
-                    </div>
-                    <div class="text-right">
-                        <label class="text-[9px] text-slate-600 uppercase font-bold block">Verified Plays</label>
-                        <p id="display-verified" class="text-xs text-white font-mono">0</p>
-                    </div>
+                <div class="flex justify-between text-sm">
+                    <span>Next Auto-Ad:</span>
+                    <span id="cooldown-timer" class="text-blue-400">60s</span>
                 </div>
             </div>
         </div>
+
+        <button onclick="manualTrigger()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full transition-all">
+            Manual Trigger
+        </button>
     </main>
 
     <!-- Footer -->
-    <footer class="p-6 text-center border-t border-white/5 bg-slate-950/50">
-        <div id="footer-time" class="text-xs font-mono text-slate-500 tracking-widest uppercase">00:00:00</div>
+    <footer class="p-4 bg-slate-950 border-t border-slate-800 text-center">
+        <div id="footer-date" class="text-sm font-mono text-slate-500">
+            -- Loading Date & Time --
+        </div>
     </footer>
 
-    <!-- Firebase -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
+    <!-- Custom App Logic -->
     <script src="app.js"></script>
 </body>
 </html>
