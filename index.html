@@ -3,73 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Rewards App</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Ads Rewards App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
-    <style>
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-    </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-between font-sans">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
 
-    <!-- Top Header -->
-    <header class="w-full bg-blue-600 p-4 text-white text-center shadow-lg">
-        <h1 class="text-xl font-bold tracking-wider">PREMIUM AD REWARDS</h1>
+    <!-- Header -->
+    <header class="p-6 text-center border-b border-gray-800">
+        <h1 class="text-2xl font-bold text-blue-500">Reward Ads Dashboard</h1>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-md">
+    <main class="flex-grow p-4 space-y-6 max-w-md mx-auto w-full">
         
         <!-- User ID Card -->
-        <div class="glass-card w-full rounded-2xl p-6 shadow-xl mb-6 border-t-4 border-blue-500">
-            <p class="text-gray-500 text-sm font-semibold uppercase mb-1">Unique User ID</p>
-            <div id="user-id" class="text-lg font-mono font-bold text-blue-800 bg-blue-50 p-3 rounded-lg border border-blue-100 break-all">
-                Loading...
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-blue-500/30">
+            <h2 class="text-gray-400 text-sm uppercase tracking-wider mb-2 font-semibold">Unique User Identifier</h2>
+            <div class="flex items-center justify-between">
+                <span id="userId" class="text-lg font-mono text-blue-400">Loading...</span>
+                <button onclick="copyUID()" class="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600 transition">Copy</button>
             </div>
         </div>
 
-        <!-- Ad Stats Card -->
-        <div class="glass-card w-full rounded-2xl p-6 shadow-xl text-center space-y-4">
-            <div>
-                <p class="text-gray-500 text-sm font-semibold uppercase">Daily Ads Played</p>
-                <h2 id="ad-count" class="text-5xl font-black text-slate-800">0</h2>
-            </div>
-            
-            <div class="h-px bg-gray-200 w-full"></div>
-
-            <div>
-                <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Next Auto-Ad In</p>
-                <div class="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                    <div id="cooldown-progress" class="absolute top-0 left-0 h-full bg-green-500 transition-all duration-1000" style="width: 100%"></div>
-                </div>
-                <p id="cooldown-timer" class="text-sm font-bold text-green-600 mt-1">60s</p>
-            </div>
+        <!-- Ad Count Card -->
+        <div class="bg-gradient-to-br from-indigo-900 to-purple-900 p-8 rounded-2xl shadow-2xl text-center">
+            <h2 class="text-gray-200 text-sm mb-2">Daily Ads Played</h2>
+            <div id="adCount" class="text-6xl font-black mb-2 text-white">0</div>
+            <p class="text-xs text-indigo-300">Resets daily at 00:00</p>
         </div>
 
-        <!-- Manual Button -->
-        <button onclick="triggerRandomAd()" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform active:scale-95 transition-all">
-            Watch Ad Now
-        </button>
+        <!-- Status Message -->
+        <div id="status" class="text-center text-sm text-gray-500 animate-pulse">
+            Waiting for ad initialization...
+        </div>
+
     </main>
 
     <!-- Footer -->
-    <footer class="w-full bg-slate-800 text-slate-300 p-4">
-        <div class="flex justify-between items-center text-xs px-4">
-            <div id="footer-date">--/--/----</div>
-            <div id="footer-time" class="font-mono text-sm font-bold text-white">00:00:00</div>
-        </div>
+    <footer class="p-6 bg-gray-800 border-t border-gray-700 text-center">
+        <div id="footerDate" class="text-blue-400 font-medium"></div>
+        <div id="footerTime" class="text-2xl font-bold"></div>
     </footer>
 
-    <!-- Firebase App (Compatibility Layer) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    
-    <script src="app.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module" src="app.js"></script>
+    <script>
+        function copyUID() {
+            const id = document.getElementById('userId').innerText;
+            navigator.clipboard.writeText(id);
+            alert('UID Copied!');
+        }
+    </script>
 </body>
 </html>
