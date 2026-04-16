@@ -15,7 +15,7 @@ const db = firebase.database();
 
 // --- STATE ---
 let adCounter = 0;
-let cooldownSeconds = 60;
+let cooldownSeconds = 1;
 let isRunning = false;
 
 // --- AD LOGIC WRAPPERS ---
