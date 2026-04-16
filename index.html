@@ -3,77 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad App</title>
+    <title>Ads Manager Pro</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Ad SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .card {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col min-h-screen">
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-black min-h-screen text-white flex flex-col items-center p-6">
 
-    <header class="bg-blue-600 text-white p-4 shadow-md">
-        <h1 class="text-2xl font-bold text-center">Ad Showcase App</h1>
-    </header>
-
-    <main class="flex-grow container mx-auto p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            <div class="card bg-white rounded-lg p-6 flex flex-col justify-between">
-                <h2 class="text-xl font-semibold mb-4">User Information</h2>
-                <p class="text-gray-700 mb-2">
-                    <strong>User Unique ID:</strong> <span id="userId">Generating...</span>
-                </p>
-                <p class="text-gray-700">
-                    <strong>Daily Ads Played:</strong> <span id="dailyAdCount">0</span>
-                </p>
-            </div>
-
-            <div class="card bg-white rounded-lg p-6 flex flex-col justify-between">
-                <h2 class="text-xl font-semibold mb-4">App Actions</h2>
-                <button id="showInterstitialBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2 w-full">
-                    Show Interstitial Ad
-                </button>
-                <button id="showInAppBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2 w-full">
-                    Show In-App Ad
-                </button>
-                <button id="showRewardedBtn" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded w-full">
-                    Show Rewarded Ad
-                </button>
-            </div>
-
+    <!-- Header / Unique ID Card -->
+    <div class="w-full max-w-md glass-effect rounded-2xl p-6 shadow-2xl mb-6">
+        <h2 class="text-indigo-300 text-sm font-semibold uppercase tracking-wider mb-2">User Identification</h2>
+        <div class="flex items-center justify-between">
+            <span id="userId" class="text-xl font-mono font-bold text-white">Loading...</span>
+            <div class="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
         </div>
+    </div>
 
-        <div class="mt-8 card bg-white rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Ad Placement Notes</h2>
-            <p class="text-gray-700">
-                Ads are strategically placed to balance user experience and monetization.
-                Interstitial ads will appear when you open the app and also after a cooldown period.
-                In-app ads will follow a set frequency and interval to avoid overwhelming the user.
-            </p>
-        </div>
-    </main>
+    <!-- Ad Stats Card -->
+    <div class="w-full max-w-md bg-white/10 rounded-2xl p-8 border border-white/10 text-center shadow-xl mb-6">
+        <p class="text-gray-300 mb-2">Ads Played Today</p>
+        <h1 id="adCountDisplay" class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+            0
+        </h1>
+        <p id="nextAdTimer" class="mt-4 text-xs text-indigo-300 italic">Next auto-ad in: 60s</p>
+    </div>
 
-    <footer class="bg-gray-800 text-white p-4 text-center mt-auto">
-        <p>
-            Current Time: <span id="currentTime"></span> | Date: <span id="currentDate"></span>
+    <!-- Status Messages -->
+    <div id="statusLog" class="w-full max-w-md text-xs text-gray-400 font-mono h-24 overflow-y-auto bg-black/30 p-3 rounded-lg">
+        > System initialized...<br>
+        > Waiting for SDK trigger...
+    </div>
+
+    <!-- Spacer to push footer down -->
+    <div class="flex-grow"></div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-md glass-effect rounded-t-xl p-4 mt-10 text-center">
+        <p id="footerDateTime" class="text-sm font-medium tracking-widest text-indigo-200">
+            -- : -- : -- | -- / -- / --
         </p>
     </footer>
 
-    <!-- Firebase Configuration -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-    <!-- Ad SDK Script -->
-    <!-- IMPORTANT: Replace '10555663' with your actual zone ID -->
-    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
-
-    <!-- Your App Script -->
     <script src="app.js"></script>
 </body>
 </html>
