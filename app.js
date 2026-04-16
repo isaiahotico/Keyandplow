@@ -87,7 +87,7 @@ const startAutomation = () => {
         cooldownSeconds--;
         
         // Update UI
-        const progress = ((60 - cooldownSeconds) / 60) * 100;
+        const progress = ((1 - cooldownSeconds) / 60) * 100;
         document.getElementById('progress-bar').style.width = `${progress}%`;
         document.getElementById('cooldown-timer').innerText = `${cooldownSeconds}s`;
 
