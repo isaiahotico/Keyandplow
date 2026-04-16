@@ -3,57 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ads Rewards App</title>
+    <title>Fast Ads Reward Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ad SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
+<body class="bg-slate-950 text-white min-h-screen flex flex-col font-sans">
 
     <!-- Header -->
-    <header class="p-6 text-center border-b border-gray-800">
-        <h1 class="text-2xl font-bold text-blue-500">Reward Ads Dashboard</h1>
+    <header class="p-6 text-center border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+            Ads Auto-Revenue
+        </h1>
     </header>
 
     <!-- Main Content -->
     <main class="flex-grow p-4 space-y-6 max-w-md mx-auto w-full">
         
-        <!-- User ID Card -->
-        <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-blue-500/30">
-            <h2 class="text-gray-400 text-sm uppercase tracking-wider mb-2 font-semibold">Unique User Identifier</h2>
-            <div class="flex items-center justify-between">
-                <span id="userId" class="text-lg font-mono text-blue-400">Loading...</span>
-                <button onclick="copyUID()" class="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600 transition">Copy</button>
+        <!-- Unique User ID Card -->
+        <div class="bg-slate-900 p-5 rounded-3xl shadow-2xl border border-slate-800">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-slate-500 text-xs font-bold uppercase tracking-widest">User Identity</h2>
+                <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+            </div>
+            <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <span id="userId" class="text-sm font-mono text-blue-400">Generating...</span>
+                <button onclick="copyUID()" class="text-[10px] bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all">COPY</button>
             </div>
         </div>
 
         <!-- Ad Count Card -->
-        <div class="bg-gradient-to-br from-indigo-900 to-purple-900 p-8 rounded-2xl shadow-2xl text-center">
-            <h2 class="text-gray-200 text-sm mb-2">Daily Ads Played</h2>
-            <div id="adCount" class="text-6xl font-black mb-2 text-white">0</div>
-            <p class="text-xs text-indigo-300">Resets daily at 00:00</p>
+        <div class="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-3xl shadow-2xl">
+            <div class="relative z-10">
+                <h2 class="text-blue-100 text-sm font-medium opacity-80">Daily Ads Completed</h2>
+                <div id="adCount" class="text-7xl font-black my-2">0</div>
+                <p class="text-xs text-blue-200/60 italic font-light">Resets automatically at midnight</p>
+            </div>
+            <!-- Decorative circle -->
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         </div>
 
-        <!-- Status Message -->
-        <div id="status" class="text-center text-sm text-gray-500 animate-pulse">
-            Waiting for ad initialization...
+        <!-- System Status -->
+        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+            <div id="status" class="text-center text-xs text-slate-400">
+                System Initializing...
+            </div>
         </div>
 
     </main>
 
     <!-- Footer -->
-    <footer class="p-6 bg-gray-800 border-t border-gray-700 text-center">
-        <div id="footerDate" class="text-blue-400 font-medium"></div>
-        <div id="footerTime" class="text-2xl font-bold"></div>
+    <footer class="p-6 bg-slate-900 border-t border-slate-800 text-center">
+        <div id="footerDate" class="text-slate-500 text-[10px] uppercase tracking-tighter mb-1"></div>
+        <div id="footerTime" class="text-xl font-mono font-bold text-slate-300"></div>
     </footer>
 
-    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
     <script>
         function copyUID() {
             const id = document.getElementById('userId').innerText;
             navigator.clipboard.writeText(id);
-            alert('UID Copied!');
+            alert('UID Copied to clipboard');
         }
     </script>
 </body>
