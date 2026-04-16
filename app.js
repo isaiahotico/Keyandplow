@@ -9,123 +9,124 @@ const firebaseConfig = {
     appId: "1:589427984313:web:a17b8cc851efde6dd79868"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- UNIQUE USER IDENTIFICATION ---
-const getUserId = () => {
-    let uid = localStorage.getItem('app_user_id');
-    if (!uid) {
-        // Generate a unique ID (Format: USR-XXXX-XXXX)
-        uid = 'USR-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-        localStorage.setItem('app_user_id', uid);
+// --- USER & STATE MANAGEMENT ---
+const getUID = () => {
+    let id = localStorage.getItem('_app_uid');
+    if(!id) {
+        id = 'ID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        localStorage.setItem('_app_uid', id);
     }
-    return uid;
+    return id;
 };
 
-const USER_ID = getUserId();
-let adCounter = 0;
-let cooldownSeconds = 1;
-let isStarted = false;
+const USER_ID = getUID();
+let interstitialCount = 0;
+let cooldown = 60;
+let engineStarted = false;
 
-// --- AD VARIATIONS ---
-const adFunctions = [
-    () => show_10555663(), // Standard
-    () => show_10555663('pop'), // Popup
-    () => show_10555746(), // Reward 1
-    () => show_10555727(), // Reward 2
-    () => show_10555663({ // InApp specific
-        type: 'inApp',
-        inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-    })
-];
-
-// --- LOGIC ---
-
-const updateStats = () => {
-    adCounter++;
+// --- AD SDK HANDLERS ---
+// We only trigger 'increment' for Interstitials and Popups
+const triggerAd = (type) => {
+    console.log(`System: Triggering ${type}`);
     
-    // Update Local UI
-    document.getElementById('ad-count').innerText = adCounter;
-    document.getElementById('display-total').innerText = adCounter;
+    if (type === 'interstitial') {
+        // Randomly pick one of the three interstitial-capable zones
+        const zones = [show_10555663, show_10555746, show_10555727];
+        const picker = Math.floor(Math.random() * zones.length);
+        
+        zones[picker]().then(() => countAd()).catch(() => countAd());
+    } 
+    
+    else if (type === 'popup') {
+        show_10555663('pop').then(() => countAd()).catch(() => countAd());
+    }
 
-    // Save to Firebase under specific User ID
-    const today = new Date().toISOString().split('T')[0];
-    db.ref(`users/${USER_ID}/${today}`).set(adCounter);
+    else if (type === 'inApp') {
+        show_10555663({
+            type: 'inApp',
+            inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+        }).then(() => countAd()).catch(() => countAd());
+    }
 };
 
-const checkDailyReset = () => {
+const countAd = () => {
+    interstitialCount++;
+    updateUI();
+    saveToFirebase();
+};
+
+// --- DATA LOGIC ---
+const saveToFirebase = () => {
     const today = new Date().toISOString().split('T')[0];
-    const lastDate = localStorage.getItem('last_reset_date');
+    db.ref(`analytics/users/${USER_ID}/${today}`).set(interstitialCount);
+};
+
+const dailyResetCheck = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const savedDate = localStorage.getItem('_last_run');
     
-    if (lastDate !== today) {
-        adCounter = 0;
-        localStorage.setItem('last_reset_date', today);
-        db.ref(`users/${USER_ID}/${today}`).set(0);
+    document.getElementById('display-uid').innerText = USER_ID;
+    document.getElementById('current-date').innerText = today;
+
+    if (savedDate !== today) {
+        interstitialCount = 0;
+        localStorage.setItem('_last_run', today);        saveToFirebase();
     } else {
-        // Fetch current count for user from Firebase
-        db.ref(`users/${USER_ID}/${today}`).once('value').then((snapshot) => {
-            adCounter = snapshot.val() || 0;
-            document.getElementById('ad-count').innerText = adCounter;            document.getElementById('display-total').innerText = adCounter;
+        db.ref(`analytics/users/${USER_ID}/${today}`).once('value', (snap) => {
+            interstitialCount = snap.val() || 0;
+            updateUI();
         });
     }
-    document.getElementById('display-uid').innerText = USER_ID;
 };
 
-const triggerRandomAd = () => {
-    const idx = Math.floor(Math.random() * adFunctions.length);
-    console.log(`[${USER_ID}] Triggering Ad #${idx}`);
+const updateUI = () => {
+    document.getElementById('ad-count').innerText = interstitialCount;
+    document.getElementById('display-verified').innerText = interstitialCount;
+};
+
+// --- AUTOMATION LOOPS ---
+const runEngine = () => {
+    if(engineStarted) return;
+    engineStarted = true;
     
-    try {
-        adFunctions[idx]().then(() => updateStats()).catch(() => updateStats());
-    } catch(e) {
-        updateStats(); // Increment anyway for the attempt
-    }
-};
-
-const updateClock = () => {
-    const now = new Date();
-    document.getElementById('footer-date').innerText = now.toLocaleString();
-};
-
-// --- AUTOMATION ENGINE ---
-
-const startEngine = () => {
-    if (isStarted) return;
-    isStarted = true;
     document.getElementById('unlock-layer').style.display = 'none';
-    document.getElementById('connection-status').innerText = "LIVE: SYNCED";
-    document.getElementById('connection-status').classList.replace('text-slate-500', 'text-green-500');
+    document.getElementById('status-tag').innerText = "ENGINE RUNNING";
+    document.getElementById('status-tag').classList.add('text-blue-500');
 
-    // 1. LIMITLESS LOOP (Every 25 seconds)
+    // 1. LIMITLESS RANDOM LOOP (Every 22 seconds)
+    // Randomly switches between Interstitial and Popup formats
     setInterval(() => {
-        triggerRandomAd();
-    }, 25000);
+        const adType = Math.random() > 0.5 ? 'interstitial' : 'popup';
+        triggerAd(adType);
+    }, 22000);
 
-    // 2. 1-MINUTE COOLDOWN LOOP
+    // 2. 1-MINUTE COOLDOWN (Specific In-App Interstitial)
     setInterval(() => {
-        cooldownSeconds--;
-        
-        // Update Progress Bar
-        const progress = ((1 - cooldownSeconds) / 45) * 100;
-        document.getElementById('progress-bar').style.width = `${progress}%`;
-        document.getElementById('cooldown-timer').innerText = `${cooldownSeconds}s`;
+        cooldown--;
+        const percent = ((60 - cooldown) / 60) * 100;
+        document.getElementById('progress-bar').style.width = percent + "%";
+        document.getElementById('cooldown-timer').innerText = cooldown + "s";
 
-        if (cooldownSeconds <= 45) {
-            adFunctions[4](); // Trigger In-App Specifically
-            updateStats();
-            cooldownSeconds = 1;
+        if(cooldown <= 0) {
+            triggerAd('inApp');
+            cooldown = 60;
         }
     }, 1000);
 
-    // Start immediate ad
-    triggerRandomAd();
+    // Immediate start
+    triggerAd('interstitial');
 };
 
-// --- INIT ---
+// Clock
+setInterval(() => {
+    document.getElementById('footer-time').innerText = new Date().toLocaleTimeString();
+}, 1000);
+
+// Initialize
 window.onload = () => {
-    checkDailyReset();
-    setInterval(updateClock, 1000);
-    document.getElementById('unlock-layer').addEventListener('click', startEngine);
+    dailyResetCheck();
+    document.getElementById('unlock-layer').addEventListener('click', runEngine);
 };
