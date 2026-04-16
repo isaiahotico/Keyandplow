@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// --- DATABASE CONFIGURATION ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
     authDomain: "facebook-follow-to-follow.firebaseapp.com",
@@ -12,24 +12,30 @@ const firebaseConfig = {
     appId: "1:589427984313:web:a17b8cc851efde6dd79868"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- APP LOGIC ---
+// --- APP INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
     updateClock();
     setInterval(updateClock, 1000);
     
-    // Auto-show ad after 3 seconds delay for better loading
-    setTimeout(showRandomAd, 3000);
+    // 1. START IN-APP ADS IMMEDIATELY (Based on your config)
+    startInAppAds();
+
+    // 2. START AUTO REWARDED ADS LOOP
+    // First ad shows after 1 second fast
+    setTimeout(showRandomRewardedAd, 1000); 
+    
+    // Then continues every 2 minutes (120,000 ms)
+    setInterval(showRandomRewardedAd, 120000);
 });
 
 function initApp() {
     let uid = localStorage.getItem('adApp_uid');
     if (!uid) {
-        uid = 'UID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        uid = 'USER-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         localStorage.setItem('adApp_uid', uid);
     }
     document.getElementById('userId').innerText = uid;
@@ -38,20 +44,60 @@ function initApp() {
     updateDisplayCount();
 }
 
-// Function to handle clock and date
+function startInAppAds() {
+    try {
+        show_10555663({
+            type: 'inApp',
+            inAppSettings: {
+                frequency: 2,
+                capping: 0.1,
+                interval: 30,
+                timeout: 5,
+                everyPage: false
+            }
+        });
+        console.log("In-App Engine Started");
+    } catch (e) {
+        console.error("In-App Ad Failed:", e);
+    }
+}
+
+async function showRandomRewardedAd() {
+    const status = document.getElementById('status');
+    status.innerHTML = <span class="text-yellow-500 italic text-xs">Launching auto-reward ad...</span>;
+
+    const adPool = [
+        () => show_10555663(),
+        () => show_10555746(),
+        () => show_10555727(),
+        () => show_10555663('pop')
+    ];
+
+    const randomIndex = Math.floor(Math.random() * adPool.length);
+    const selectedAdFunc = adPool[randomIndex];
+
+    try {
+        await selectedAdFunc();
+        status.innerHTML = <span class="text-emerald-500 font-bold tracking-widest text-xs">AD COMPLETE ✓</span>;
+        incrementCount();
+    } catch (error) {
+        status.innerHTML = <span class="text-red-400 text-xs">Engine busy or ad blocked...</span>;
+        console.warn("Auto-ad error:", error);
+    }
+}
+
+// --- UTILITY FUNCTIONS ---
+
 function updateClock() {
     const now = new Date();
-    document.getElementById('footerDate').innerText = now.toLocaleDateString('en-US', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-    });
+    const options = { weekday: 'short', month: 'short', day: 'numeric' };
+    document.getElementById('footerDate').innerText = now.toLocaleDateString('en-US', options);
     document.getElementById('footerTime').innerText = now.toLocaleTimeString();
 }
 
-// Daily Reset Logic
 function checkDailyReset() {
     const today = new Date().toDateString();
     const lastDate = localStorage.getItem('adApp_lastDate');
-
     if (lastDate !== today) {
         localStorage.setItem('adApp_lastDate', today);
         localStorage.setItem('adApp_count', '0');
@@ -63,54 +109,18 @@ function updateDisplayCount() {
     document.getElementById('adCount').innerText = count;
 }
 
-// Increment Count in LocalStorage and Firebase
 async function incrementCount() {
     let count = parseInt(localStorage.getItem('adApp_count') || 0);
     count++;
     localStorage.setItem('adApp_count', count);
     updateDisplayCount();
 
-    // Update Firebase
     const uid = localStorage.getItem('adApp_uid');
     const userRef = ref(db, 'users/' + uid);
     try {
         await update(userRef, {
-            last_played: new Date().toISOString(),
-            total_ads_today: count
+            last_activity: new Date().toISOString(),
+            daily_total: count
         });
-    } catch (e) {
-        console.error("Firebase Update Error: ", e);
-    }
-}
-
-// Show Random Ad Automatically
-async function showRandomAd() {
-    const status = document.getElementById('status');
-    status.innerText = "Attempting to load random ad...";
-
-    // Array of available ad functions from your SDK
-    const adPool = [
-        () => show_10555663(),
-        () => show_10555746(),
-        () => show_10555727(),
-        () => show_10555663('pop')
-    ];
-
-    // Pick one randomly
-    const randomIndex = Math.floor(Math.random() * adPool.length);
-    const selectedAd = adPool[randomIndex];
-
-    try {
-        await selectedAd();
-        // Success logic
-        status.innerText = "Ad watched successfully!";
-        incrementCount();
-        
-        // Loop: Try showing another ad after 10 seconds
-        setTimeout(showRandomAd, 10000);
-    } catch (error) {
-        console.error("Ad failed:", error);
-        status.innerText = "Ad block detected or load failed. Retrying...";
-        setTimeout(showRandomAd, 5000); // Retry soon
-    }
+    } catch (e) { console.error("DB Sync Error", e); }
 }
