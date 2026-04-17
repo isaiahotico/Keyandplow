@@ -11,104 +11,106 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const db = firebase.database();
 
-// --- STATE MANAGEMENT ---
-let adsWatched = 0;
+// --- GLOBALS ---
 let userId = "";
+let dailyCount = 0;
 
-// --- UTILS ---
-const generateUserId = () => {
-    let id = localStorage.getItem('unique_user_id');
-    if (!id) {
-        id = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        localStorage.setItem('unique_user_id', id);
+// --- FIX: UID LOADING & RETENTION ---
+const initializeUser = () => {
+    let storedId = localStorage.getItem('ads_app_uid');
+    if (!storedId) {
+        // Generate a clean unique ID
+        storedId = 'ID-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + Date.now().toString().slice(-4);
+        localStorage.setItem('ads_app_uid', storedId);
     }
-    return id;
+    userId = storedId;
+    document.getElementById('uid-display').innerText = userId;
 };
 
-const checkDailyReset = () => {
-    const lastDate = localStorage.getItem('last_ads_date');
-    const today = new Date().toLocaleDateString();
+// --- DAILY RESET LOGIC ---
+const handleDailyReset = () => {
+    const today = new Date().toDateString(); // e.g. "Fri Apr 17 2026"
+    const lastDate = localStorage.getItem('ads_app_last_date');
 
     if (lastDate !== today) {
-        adsWatched = 0;
-        localStorage.setItem('ads_count', 0);
-        localStorage.setItem('last_ads_date', today);
+        dailyCount = 0;
+        localStorage.setItem('ads_app_count', 0);
+        localStorage.setItem('ads_app_last_date', today);
     } else {
-        adsWatched = parseInt(localStorage.getItem('ads_count')) || 0;
+        dailyCount = parseInt(localStorage.getItem('ads_app_count')) || 0;
     }
-    document.getElementById('dailyCount').innerText = adsWatched;
+    document.getElementById('daily-count').innerText = dailyCount;
 };
 
-const updateCount = () => {
-    adsWatched++;
-    localStorage.setItem('ads_count', adsWatched);
-    document.getElementById('dailyCount').innerText = adsWatched;
+const incrementAdCount = () => {
+    dailyCount++;
+    localStorage.setItem('ads_app_count', dailyCount);
+    document.getElementById('daily-count').innerText = dailyCount;
     
-    // Optional: Sync with Firebase
-    database.ref('users/' + userId).set({
-        lastActive: new Date().toISOString(),
-        adsCount: adsWatched
+    // Update Firebase
+    db.ref('stats/' + userId).set({
+        total_watched: dailyCount,
+        last_updated: firebase.database.ServerValue.TIMESTAMP
     });
 };
 
-// --- AD LOGIC ---
-const adFunctions = [
-    () => typeof show_10555663 === 'function' ? show_10555663() : Promise.reject(),
-    () => typeof show_10555746 === 'function' ? show_10555746() : Promise.reject(),
-    () => typeof show_10555727 === 'function' ? show_10555727() : Promise.reject()
+// --- AUTO AD ENGINE ---
+const adZones = [
+    () => show_10555663(),
+    () => show_10555746(),
+    () => show_10555727(),
+    () => show_10555663('pop')
 ];
 
-async function startAutoAds() {
-    // 2-second cooldown/delay before the first ad and between ads
-    console.log("Cooldown started...");
-    document.getElementById('statusIndicator').innerHTML = <p class="text-sm text-yellow-400 font-medium italic">Preparing next ad (2s)...</p>;
+async function runAdCycle() {
+    const statusLabel = document.getElementById('ad-status');
+    
+    // 2-Second Cooldown
+    statusLabel.innerText = "Cooldown (2s)...";
+    statusLabel.classList.replace('text-green-400', 'text-yellow-400');
     
     setTimeout(async () => {
+        statusLabel.innerText = "Requesting Ad...";
+        statusLabel.classList.replace('text-yellow-400', 'text-blue-400');
+
         try {
-            // Pick a random ad function from the array
-            const randomIndex = Math.floor(Math.random() * adFunctions.length);
-            const randomAd = adFunctions[randomIndex];
-
-            document.getElementById('statusIndicator').innerHTML = <p class="text-sm text-cyan-400 font-medium italic">Ad playing...</p>;
+            // Pick random ad from your functions
+            const randomIdx = Math.floor(Math.random() * adZones.length);
+            await adZones[randomIdx]();
             
-            await randomAd();
-            
-            // Success
-            updateCount();
-            console.log("Ad finished. Restarting loop...");
-            startAutoAds(); // Loop again
-
-        } catch (error) {
-            console.error("Ad failed to load or closed early", error);
-            // Even if it fails, wait and try again
-            startAutoAds();
+            // On Ad Success
+            incrementAdCount();
+            console.log("Ad completed successfully.");
+        } catch (e) {
+            console.warn("Ad skip or error:", e);
         }
-    }, 2000); 
+
+        // Loop immediately (the 2s cooldown happens at start of next cycle)
+        runAdCycle();
+    }, 2000);
 }
 
-// --- CLOCK & FOOTER ---
-function updateClock() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-GB', { hour12: false });
-    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    
-    document.getElementById('footerTime').innerText = timeStr;
-    document.getElementById('footerDate').innerText = dateStr;
-}
-
-// --- INITIALIZATION ---
-window.onload = () => {
-    userId = generateUserId();
-    document.getElementById('userIdDisplay').innerText = userId;
-    
-    checkDailyReset();
-    
-    // Start Clock
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // Start Auto Ad Cycle after a brief initial delay
-    startAutoAds();
+// --- FOOTER TIME & DATE ---
+const startClock = () => {
+    const update = () => {
+        const now = new Date();
+        document.getElementById('footer-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+        document.getElementById('footer-date').innerText = now.toLocaleDateString('en-US', { 
+            weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+    };
+    setInterval(update, 1000);
+    update();
 };
+
+// --- START APP ---
+window.addEventListener('DOMContentLoaded', () => {
+    initializeUser();
+    handleDailyReset();
+    startClock();
+    
+    // Initial delay before first ad starts
+    setTimeout(runAdCycle, 1000);
+});
