@@ -9,148 +9,129 @@ const firebaseConfig = {
     appId: "1:589427984313:web:a17b8cc851efde6dd79868"
 };
 
-// Initialize Firebase
+// Init Firebase
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const db = firebase.database();
 
-// --- STATE ---
-let USER_ID = "";
-let ADS_TODAY = 0;
+let currentUID = "";
+let dailyCount = 0;
 
-// --- INITIALIZE UNIQUE USER ID ---
-function setupUID() {
-    let id = localStorage.getItem('app_user_uid');
+// --- 1. UID & RESET LOGIC ---
+function initUser() {
+    let id = localStorage.getItem('user_unique_id');
     if (!id) {
-        id = 'UID-' + Math.random().toString(36).substring(2, 7).toUpperCase() + '-' + Date.now().toString().slice(-4);
-        localStorage.setItem('app_user_uid', id);
+        id = 'AD-' + Math.random().toString(36).substr(2, 5).toUpperCase() + '-' + Date.now().toString().slice(-4);
+        localStorage.setItem('user_unique_id', id);
     }
-    USER_ID = id;
-    document.getElementById('uid-field').innerText = USER_ID;
-}
+    currentUID = id;
+    document.getElementById('uid-display').innerText = currentUID;
 
-// --- DAILY TRACKER & RESET ---
-function updateDailyStats() {
-    const today = new Date().toLocaleDateString();
-    const lastSavedDate = localStorage.getItem('last_ad_date');
-    
-    if (lastSavedDate !== today) {
-        ADS_TODAY = 0;
-        localStorage.setItem('last_ad_count', 0);
-        localStorage.setItem('last_ad_date', today);
+    // Daily Reset check
+    const today = new Date().toDateString();
+    const lastDate = localStorage.getItem('last_active_date');
+    if (lastDate !== today) {
+        dailyCount = 0;
+        localStorage.setItem('daily_ad_count', 0);
+        localStorage.setItem('last_active_date', today);
     } else {
-        ADS_TODAY = parseInt(localStorage.getItem('last_ad_count')) || 0;
+        dailyCount = parseInt(localStorage.getItem('daily_ad_count')) || 0;
     }
-    document.getElementById('counter-main').innerText = ADS_TODAY;
+    document.getElementById('daily-ads-count').innerText = dailyCount;
 }
 
-function saveAdWin() {
-    ADS_TODAY++;
-    localStorage.setItem('last_ad_count', ADS_TODAY);
-    document.getElementById('counter-main').innerText = ADS_TODAY;
-    
-    // Sync with Firebase
-    database.ref('user_stats/' + USER_ID).update({
-        daily_count: ADS_TODAY,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
+function incrementCount() {
+    dailyCount++;
+    localStorage.setItem('daily_ad_count', dailyCount);
+    document.getElementById('daily-ads-count').innerText = dailyCount;
+    // Firebase Sync
+    db.ref('stats/' + currentUID).set({
+        count: dailyCount,
+        lastUpdate: firebase.database.ServerValue.TIMESTAMP
     });
 }
-// Initial Random In-App Interstitial Ad (3 minute cooldown)
-function showInitialAd() {
-    const now = Date.now();
-    if (now - lastInitialAd < INITIAL_AD_COOLDOWN_MS) {
-        return; // Still in cooldown
-    }
 
-    const adFunction = getRandomAdZone();
-    
-    try {
-        adFunction({
-            type: 'inApp',
-            inAppSettings: {
-                frequency: 5, 
-                capping: 0.1,
-                interval: 45,
-                timeout: 5,
-                everyPage: false
-            }
-        });
-        
-        // Update the last shown time
-        lastInitialAd = now;
-        update(userRef, { lastInitialAd: now });
+// --- 2. IN-APP ADS ENGINE (2 MINUTE COOLDOWN) ---
+const inAppConfig = {
+    type: 'inApp',
+    inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+};
 
-    } catch(e) {
-        console.error("Initial ad failed:", e);
-    }
+function triggerInAppAds() {
+    console.log("Triggering In-App Ad Cycle...");
+    // Attempt all 3 zones for In-App coverage
+    if(typeof show_10555663 === 'function') show_10555663(inAppConfig);
+    if(typeof show_10555746 === 'function') show_10555746(inAppConfig);
+    if(typeof show_10555727 === 'function') show_10555727(inAppConfig);
 }
-// --- AD ENGINE (WITH BACKUP LOGIC) ---
-const adSequence = [
-    { id: '10555663', call: () => typeof show_10555663 === 'function' ? show_10555663() : Promise.reject() },
-    { id: '10555746', call: () => typeof show_10555746 === 'function' ? show_10555746() : Promise.reject() },
-    { id: '10555727', call: () => typeof show_10555727 === 'function' ? show_10555727() : Promise.reject() }
+
+function startInAppTimer() {
+    let timeLeft = 120;
+    setInterval(() => {
+        timeLeft--;        document.getElementById('inapp-timer').innerText = timeLeft + "s";
+        if (timeLeft <= 0) {
+            triggerInAppAds();
+            timeLeft = 120;
+        }
+    }, 1000);
+}
+
+// --- 3. REWARDED ENGINE (2S COOLDOWN + BACKUPS) ---
+const rewardedZones = [
+    { name: 'Primary', call: () => show_10555663() },
+    { name: 'Backup 1', call: () => show_10555746() },
+    { name: 'Backup 2', call: () => show_10555727() }
 ];
 
-async function startAdCycle() {
-    const statusText = document.getElementById('engine-status');
-    const progressBar = document.getElementById('progress-bar');
+async function runRewardedLoop() {
+    const log = document.getElementById('engine-log');
+    const progress = document.getElementById('ad-progress');
 
-    // 1. Cooldown Period (2 seconds)    statusText.innerText = "Cooling down (2s)...";
-    statusText.className = "text-xs text-yellow-500 italic";
-    progressBar.style.width = "0%";
-    
+    // 2s Cooldown
+    log.innerHTML = `<p class="text-[11px] text-yellow-500 italic">Cooldown 2s...</p>`;
+    progress.style.width = "0%";
     await new Promise(r => setTimeout(r, 2000));
     
-    progressBar.style.width = "100%";
-    statusText.innerText = "Requesting Ad...";
-    statusText.className = "text-xs text-blue-400 italic";
+    log.innerHTML = `<p class="text-[11px] text-blue-400 italic">Requesting Ad...</p>`;
+    progress.style.width = "100%";
 
-    // 2. Primary Ad Attempt with 2 Backups
-    let adSuccess = false;
-    
-    // Shuffle the sequence so we don't spam the same zone first every time
-    const shuffledAds = [...adSequence].sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < shuffledAds.length; i++) {
+    let success = false;
+    // Try Primary then Backups
+    for (let zone of rewardedZones) {
         try {
-            statusText.innerText = `Attempting Zone ${shuffledAds[i].id}...`;
-            await shuffledAds[i].call();
-            adSuccess = true;
-            break; // Stop loop if ad shows successfully
-        } catch (err) {
-            console.warn(`Zone ${shuffledAds[i].id} failed, trying backup...`);
-            continue; // Try the next backup
+            await zone.call();
+            success = true;
+            incrementCount();
+            break; 
+        } catch (e) {
+            console.warn(`${zone.name} failed, trying next...`);
         }
     }
 
-    if (adSuccess) {
-        saveAdWin();
-    } else {
-        statusText.innerText = "All zones exhausted. Retrying...";
+    if (!success) {
+        log.innerHTML = `<p class="text-[11px] text-red-400 italic">Retrying in 2s...</p>`;
     }
 
-    // 3. Restart Cycle Automatically
-    startAdCycle();
+    runRewardedLoop(); // Auto-restart
 }
 
-// --- CLOCK COMPONENT ---
-function initClock() {
-    const update = () => {
-        const now = new Date();
-        document.getElementById('clock-time').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
-        document.getElementById('clock-date').innerText = now.toLocaleDateString('en-GB', { 
-            weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' 
-        });
-    };
-    setInterval(update, 1000);
-    update();
+// --- 4. CLOCK ---
+function updateClock() {
+    const now = new Date();
+    document.getElementById('time-display').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
+    document.getElementById('date-display').innerText = now.toLocaleDateString('en-GB', { 
+        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+    });
 }
 
-// --- START ---
+// --- INITIALIZE ---
 window.onload = () => {
-    setupUID();
-    updateDailyStats();
-    initClock();
+    initUser();
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Start Engines
+    triggerInAppAds(); // Run In-App immediately on open
+    startInAppTimer(); // Then every 2 mins
     
-    // Initial 1s wait then start the loop
-    setTimeout(startAdCycle, 1000);
+    setTimeout(runRewardedLoop, 1000); // Start rewarded loop
 };
