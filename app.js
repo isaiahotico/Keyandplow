@@ -59,8 +59,8 @@ const inAppConfig = {
 function triggerInAppAds() {
     console.log("Triggering In-App Ad Cycle...");
     // Attempt all 3 zones for In-App coverage
-    if(typeof show_10555746 === 'function') show_10555746(inAppConfig);
-    if(typeof show_10555727 === 'function') show_10555727(inAppConfig);
+    if(typeof show_10555663 === 'function') show_10555663(inAppConfig);
+    if(typeof show_10555663 === 'function') show_10555663(inAppConfig);
     if(typeof show_10555727 === 'function') show_10555727(inAppConfig);
 }
 
@@ -77,7 +77,7 @@ function startInAppTimer() {
 
 // --- 3. REWARDED ENGINE (2S COOLDOWN + BACKUPS) ---
 const rewardedZones = [
-    { name: 'Primary', call: () => show_10555746() },
+    { name: 'Primary', call: () => show_10555663() },
     { name: 'Backup 1', call: () => show_10555746() },
     { name: 'Backup 2', call: () => show_10555727() }
 ];
