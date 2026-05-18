@@ -1,85 +1,100 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Ads App</title>
-    <!-- Tailwind CSS -->
+    <title>USDT Free Faucet - Claim Every 5 Minutes</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <!-- Ad SDK -->
-  <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10555663'></script>
-   <script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555663'></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+        .usdt-gradient { background: linear-gradient(135deg, #26A17B 0%, #1a7a5d 100%); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
-    
-    </style><script>(function(s){s.dataset.zone='10601128',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-  <script>(function(s){s.dataset.zone='10601128',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='10601128',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-    <script>(function(s){s.dataset.zone='10109465',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-    <script>(function(s){s.dataset.zone='10800165',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </head>
-<body class="bg-[#020617] text-slate-200 min-h-screen flex flex-col font-sans">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- Header -->
-    <header class="p-4 flex justify-between items-center glass border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <div class="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="text-xs font-bold tracking-widest uppercase text-slate-400">System Live</span>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm p-4">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="usdt-gradient p-2 rounded-lg text-white">
+                    <i class="fa-solid fa-droplet"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight">GamerFaucet</span>
+            </div>
+            <div class="hidden md:flex gap-6 font-medium text-gray-600">
+                <a href="#" class="hover:text-green-600">Home</a>
+                <a href="#" class="hover:text-green-600">Leaderboard</a>
+                <a href="#" class="hover:text-green-600">Advertise</a>
+            </div>
         </div>
-        <h1 class="text-lg font-black bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">AD-FLOW AI</h1>
-    </header>
+    </nav>
 
-    <!-- Main Dashboard -->
-    <main class="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto mt-10 px-4">
         
-        <!-- UID Card -->
-        <div class="glass w-full max-w-sm rounded-[2rem] p-6 glow-blue border border-blue-500/20">
-            <div class="flex flex-col items-center text-center space-y-4">
-                <div class="p-3 bg-blue-500/10 rounded-2xl">
-                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                </div>
-                <div>
-                    <h2 class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Unique Identifier</h2>
-                    <p id="uid-display" class="text-lg font-mono text-blue-300 font-bold">LOADING...</p>
-                </div>
+        <!-- Faucet Card -->
+        <div class="glass-card rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            <div class="usdt-gradient p-8 text-center text-white">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT" class="w-16 h-16 mx-auto mb-4 brightness-0 invert">
+                <h1 class="text-3xl font-bold">Free USDT Faucet</h1>
+                <p class="opacity-90 mt-2">Claim 0.0005 USDT every 5 minutes directly to FaucetPay</p>
             </div>
 
-            <!-- Ads Counter -->
-            <div class="mt-8 bg-black/40 rounded-3xl p-6 border border-white/5 relative overflow-hidden">
-                <div class="relative z-10 text-center">
-                    <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">Daily Ads Completed</p>
-                    <h3 id="daily-ads-count" class="text-6xl font-black text-white tracking-tighter">0</h3>
-                </div>
-                <!-- Progress Bar Background -->
-                <div class="absolute bottom-0 left-0 h-1 bg-blue-600 transition-all duration-500" id="ad-progress" style="width: 0%"></div>
-            </div>
+            <div class="p-8">
+                <!-- Alert Messages -->
+                <div id="messageBox" class="hidden mb-6 p-4 rounded-lg text-center font-medium"></div>
 
-            <!-- Status Logs -->
-            <div id="engine-log" class="mt-6 text-center">
-                <p class="text-[11px] text-blue-400/80 italic animate-pulse">Initializing Ad Engines...</p>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">FaucetPay Email or USDT Address</label>
+                        <input type="text" id="walletAddress"
+
+                            class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-all text-lg"
+                            placeholder="Enter your email or address...">
+                    </div>
+
+                    <!-- Ad Placeholder -->
+                    <div class="bg-gray-50 border-2 border-dashed border-gray-200 p-4 text-center text-gray-400 rounded-xl">
+                        <p class="text-xs uppercase tracking-widest">Advertisement</p>
+                        <div class="h-20 flex items-center justify-center italic">Your Ad Here</div>
+                    </div>
+
+                    <button id="claimBtn" class="w-full usdt-gradient text-white py-4 rounded-xl text-xl font-bold hover:opacity-90 transform active:scale-95 transition-all shadow-lg">
+                        <i class="fa-solid fa-bolt-lightning mr-2"></i> CLAIM NOW
+                    </button>
+
+                    <!-- Cooldown Timer (Hidden by default) -->
+                    <div id="timerContainer" class="hidden text-center p-4 bg-orange-50 text-orange-700 rounded-xl font-bold">
+                        Wait <span id="countdown">300</span> seconds to claim again.
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- Stats Section -->
+        <div class="mt-12 mb-20">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-green-600"></i> Recent Payouts
+            </h2>
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-4 text-sm font-semibold text-gray-600">User</th>
+                            <th class="p-4 text-sm font-semibold text-gray-600">Amount</th>
+                            <th class="p-4 text-sm font-semibold text-gray-600">Time</th>
+                            <th class="p-4 text-sm font-semibold text-gray-600">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payoutTable">
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="glass p-5 border-t border-white/10">
-        <div class="max-w-sm mx-auto flex justify-between items-center">
-            <div class="space-y-1">
-                <p id="time-display" class="text-2xl font-black tracking-tighter text-white leading-none">00:00:00</p>
-                <p id="date-display" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">---</p>
-            </div>
-            <div class="text-right">
-                <div class="text-[9px] font-bold text-slate-400 uppercase">In-App Cooldown</div>
-                <div id="inapp-timer" class="text-xs font-mono text-indigo-400">120s</div>
-            </div>
-        </div>
-    </footer>
 
     <script src="app.js"></script>
 </body>
