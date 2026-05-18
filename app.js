@@ -1,137 +1,93 @@
-// --- DATABASE CONFIGURATION ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "facebook-follow-to-follow.firebaseapp.com",
-    databaseURL: "https://facebook-follow-to-follow-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "facebook-follow-to-follow",
-    storageBucket: "facebook-follow-to-follow.firebasestorage.app",
-    messagingSenderId: "589427984313",
-    appId: "1:589427984313:web:a17b8cc851efde6dd79868"
-};
+document.addEventListener('DOMContentLoaded', () => {
+    const claimBtn = document.getElementById('claimBtn');
+    const walletInput = document.getElementById('walletAddress');
+    const messageBox = document.getElementById('messageBox');
+    const timerContainer = document.getElementById('timerContainer');
+    const countdownDisplay = document.getElementById('countdown');
+    const payoutTable = document.getElementById('payoutTable');
 
-// Init Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+    // Configuration
+    const COOLDOWN_TIME = 300; // 5 minutes in seconds
+    const CLAIM_AMOUNT = "0.00050000 USDT";
 
-let currentUID = "";
-let dailyCount = 0;
+    // 1. Initialize dummy data for the table
+    const recentPayouts = [
+        { user: "user***@gmail.com", amount: "0.00050000", time: "2 mins ago" },
+        { user: "0x71c...882a", amount: "0.00050000", time: "5 mins ago" },
+        { user: "gamer***@yahoo.com", amount: "0.00050000", time: "8 mins ago" },
+    ];
 
-// --- 1. UID & RESET LOGIC ---
-function initUser() {
-    let id = localStorage.getItem('user_unique_id');
-    if (!id) {
-        id = 'AD-' + Math.random().toString(36).substr(2, 5).toUpperCase() + '-' + Date.now().toString().slice(-4);
-        localStorage.setItem('user_unique_id', id);
+    function renderTable() {
+        payoutTable.innerHTML = recentPayouts.map(p => `
+            <tr class="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                <td class="p-4 text-sm text-gray-700">${p.user}</td>
+                <td class="p-4 text-sm font-bold text-green-600">${p.amount} USDT</td>
+                <td class="p-4 text-sm text-gray-500">${p.time}</td>
+                <td class="p-4 text-sm"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span></td>
+            </tr>
+        `).join('');
     }
-    currentUID = id;
-    document.getElementById('uid-display').innerText = currentUID;
 
-    // Daily Reset check
-    const today = new Date().toDateString();
-    const lastDate = localStorage.getItem('last_active_date');
-    if (lastDate !== today) {
-        dailyCount = 0;
-        localStorage.setItem('daily_ad_count', 0);
-        localStorage.setItem('last_active_date', today);
-    } else {
-        dailyCount = parseInt(localStorage.getItem('daily_ad_count')) || 0;
-    }
-    document.getElementById('daily-ads-count').innerText = dailyCount;
-}
+    renderTable();
 
-function incrementCount() {
-    dailyCount++;
-    localStorage.setItem('daily_ad_count', dailyCount);
-    document.getElementById('daily-ads-count').innerText = dailyCount;
-    // Firebase Sync
-    db.ref('stats/' + currentUID).set({
-        count: dailyCount,
-        lastUpdate: firebase.database.ServerValue.TIMESTAMP
-    });
-}
+    // 2. Handle Claim Logic
+    claimBtn.addEventListener('click', async () => {
+        const address = walletInput.value.trim();
 
-// --- 2. IN-APP ADS ENGINE (2 MINUTE COOLDOWN) ---
-const inAppConfig = {
-    type: 'inApp',
-    inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-};
-
-function triggerInAppAds() {
-    console.log("Triggering In-App Ad Cycle...");
-    // Attempt all 3 zones for In-App coverage
-    if(typeof show_10555663 === 'function') show_10337795(inAppConfig);
-    if(typeof show_10555663 === 'function') show_10555663(inAppConfig);
-    if(typeof show_10555727 === 'function') show_10555727(inAppConfig);
-}
-
-function startInAppTimer() {
-    let timeLeft = 120;
-    setInterval(() => {
-        timeLeft--;        document.getElementById('inapp-timer').innerText = timeLeft + "s";
-        if (timeLeft <= 0) {
-            triggerInAppAds();
-            timeLeft = 120;
+        // Validation
+        if (!address) {
+            showMessage("Please enter a valid FaucetPay email or USDT address", "error");
+            return;
         }
-    }, 1000);
-}
 
-// --- 3. REWARDED ENGINE (2S COOLDOWN + BACKUPS) ---
-const rewardedZones = [
-    { name: 'Primary', call: () => show_10337795() },
-    { name: 'Backup 1', call: () => show_10555746() },
-    { name: 'Backup 2', call: () => show_10555727() }
-];
+        // Disable button & show loading
+        claimBtn.disabled = true;
+        claimBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
-async function runRewardedLoop() {
-    const log = document.getElementById('engine-log');
-    const progress = document.getElementById('ad-progress');
+        // Simulate API Call (Backend Request)
+        setTimeout(() => {
+            // Success Scenario
+            showMessage(`${CLAIM_AMOUNT} was sent to your FaucetPay account!`, "success");
+            
+            // Add to table
+            recentPayouts.unshift({ user: address.substring(0,6) + "...", amount: "0.00050000", time: "Just now" });
+            renderTable();
 
-    // 2s Cooldown
-    log.innerHTML = `<p class="text-[11px] text-yellow-500 italic">Cooldown 2s...</p>`;
-    progress.style.width = "0%";
-    await new Promise(r => setTimeout(r, 2000));
-    
-    log.innerHTML = `<p class="text-[11px] text-blue-400 italic">Requesting Ad...</p>`;
-    progress.style.width = "100%";
+            startTimer(COOLDOWN_TIME);
+        }, 1500);
+    });
 
-    let success = false;
-    // Try Primary then Backups
-    for (let zone of rewardedZones) {
-        try {
-            await zone.call();
-            success = true;
-            incrementCount();
-            break; 
-        } catch (e) {
-            console.warn(`${zone.name} failed, trying next...`);
+    // 3. Timer Functionality
+    function startTimer(seconds) {
+        claimBtn.classList.add('hidden');
+        timerContainer.classList.remove('hidden');
+        
+        let timeLeft = seconds;
+        
+        const interval = setInterval(() => {
+            timeLeft--;
+            countdownDisplay.innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                claimBtn.classList.remove('hidden');
+                claimBtn.disabled = false;
+                claimBtn.innerHTML = '<i class="fa-solid fa-bolt-lightning mr-2"></i> CLAIM NOW';
+                timerContainer.classList.add('hidden');
+                messageBox.classList.add('hidden');
+            }
+        }, 1000);
+    }
+
+    // 4. UI Helper
+    function showMessage(msg, type) {
+        messageBox.innerText = msg;
+        messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+        
+        if (type === "error") {
+            messageBox.classList.add('bg-red-100', 'text-red-700');
+        } else {
+            messageBox.classList.add('bg-green-100', 'text-green-700');
         }
     }
-
-    if (!success) {
-        log.innerHTML = `<p class="text-[11px] text-red-400 italic">Retrying in 2s...</p>`;
-    }
-
-    runRewardedLoop(); // Auto-restart
-}
-
-// --- 4. CLOCK ---
-function updateClock() {
-    const now = new Date();
-    document.getElementById('time-display').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
-    document.getElementById('date-display').innerText = now.toLocaleDateString('en-GB', { 
-        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
-    });
-}
-
-// --- INITIALIZE ---
-window.onload = () => {
-    initUser();
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // Start Engines
-    triggerInAppAds(); // Run In-App immediately on open
-    startInAppTimer(); // Then every 2 mins
-    
-    setTimeout(runRewardedLoop, 1000); // Start rewarded loop
-};
+});
